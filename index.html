@@ -1,0 +1,1345 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>海洋无人机采样及原位监测智能中控系统 · 无人机组网管理系统</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#020b18;--primary:#00d4ff;--green:#00ff88;--orange:#ff9500;--red:#ff3355;--blue:#0099cc;
+  --panel:rgba(0,30,60,0.7);--border:rgba(0,212,255,0.2);--text:#c8e8f0;--dim:#5a8a9f;
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Noto Sans SC',sans-serif;font-size:13px}
+body::before{
+  content:'';position:fixed;inset:0;
+  background-image:linear-gradient(rgba(0,212,255,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.04) 1px,transparent 1px);
+  background-size:40px 40px;pointer-events:none;z-index:0;
+}
+body::after{
+  content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse 80% 60% at 50% 40%,rgba(0,100,180,0.12) 0%,transparent 70%);
+  pointer-events:none;z-index:0;
+}
+@keyframes scanline{0%{transform:translateY(-100%)}100%{transform:translateY(100vh)}}
+.scanline{position:fixed;left:0;top:0;width:100%;height:2px;background:linear-gradient(transparent,rgba(0,212,255,0.08),transparent);animation:scanline 8s linear infinite;pointer-events:none;z-index:1}
+#app{position:relative;z-index:2;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+/* HEADER */
+header{height:64px;min-height:64px;background:linear-gradient(180deg,rgba(0,20,50,0.95) 0%,rgba(0,10,30,0.9) 100%);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;box-shadow:0 2px 20px rgba(0,212,255,0.1)}
+.header-left{display:flex;align-items:center;gap:16px}
+.logo svg{width:40px;height:40px}
+.header-title{font-family:'Orbitron',monospace;font-size:15px;font-weight:700;color:#fff;letter-spacing:2px;line-height:1.3}
+.header-title span{display:block;font-size:10px;font-weight:400;color:var(--primary);letter-spacing:3px;margin-top:2px}
+.header-center{display:flex;align-items:center;gap:16px}
+.hstatus{display:flex;align-items:center;gap:6px;padding:4px 12px;border:1px solid rgba(0,255,136,0.3);border-radius:20px;background:rgba(0,255,136,0.08);font-size:11px;color:var(--green)}
+.hstatus.warn{border-color:rgba(255,149,0,0.3);background:rgba(255,149,0,0.08);color:var(--orange)}
+@keyframes pulse-dot{0%,100%{opacity:1;box-shadow:0 0 6px currentColor}50%{opacity:0.5;box-shadow:none}}
+.sdot{width:6px;height:6px;border-radius:50%;background:currentColor;animation:pulse-dot 2s ease-in-out infinite}
+.hstatus.warn .sdot{animation:none}
+.header-right{display:flex;align-items:center;gap:20px}
+.sys-time{font-family:'Orbitron',monospace;font-size:14px;color:var(--primary);letter-spacing:2px}
+.sys-date{font-size:11px;color:var(--dim);text-align:right}
+.hbtn{padding:6px 14px;border:1px solid var(--border);border-radius:4px;background:rgba(0,212,255,0.08);color:var(--primary);font-size:11px;cursor:pointer;transition:all 0.2s;font-family:'Noto Sans SC',sans-serif}
+.hbtn:hover{background:rgba(0,212,255,0.18);border-color:var(--primary);box-shadow:0 0 10px rgba(0,212,255,0.2)}
+
+/* ALERT */
+#alertBanner{height:0;overflow:hidden;background:linear-gradient(90deg,rgba(255,51,85,0.9),rgba(180,0,40,0.8));border-bottom:1px solid var(--red);display:flex;align-items:center;padding:0 24px;gap:12px;transition:height 0.4s ease;font-size:12px;color:#fff}
+#alertBanner.show{height:32px;min-height:32px}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.alert-icon{font-size:14px;animation:blink 0.5s step-end infinite}
+
+/* NAV */
+nav{height:46px;min-height:46px;background:rgba(0,15,35,0.9);border-bottom:1px solid var(--border);display:flex;align-items:stretch;padding:0 16px;gap:4px}
+.tab{display:flex;align-items:center;gap:6px;padding:0 18px;border:none;background:transparent;color:var(--dim);font-size:12px;font-family:'Noto Sans SC',sans-serif;cursor:pointer;position:relative;letter-spacing:1px;transition:all 0.2s;white-space:nowrap}
+.tab::after{content:'';position:absolute;bottom:0;left:50%;right:50%;height:2px;background:var(--primary);transition:all 0.2s}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--primary)}
+.tab.active::after{left:0;right:0}
+
+/* MAIN */
+main{flex:1;display:flex;overflow:hidden;min-height:0}
+
+/* LEFT */
+.left-panel{width:300px;min-width:300px;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.panel-hdr{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.panel-title{font-family:'Orbitron',monospace;font-size:11px;color:var(--primary);letter-spacing:2px;font-weight:600}
+.fleet-stats{padding:12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;border-bottom:1px solid var(--border)}
+.stat-card{background:rgba(0,20,50,0.6);border:1px solid var(--border);border-radius:6px;padding:8px;text-align:center}
+.stat-num{font-family:'Orbitron',monospace;font-size:22px;font-weight:700;line-height:1.1}
+.stat-label{font-size:10px;color:var(--dim);margin-top:3px;letter-spacing:0.5px}
+.sc-a .stat-num{color:var(--green);text-shadow:0 0 10px rgba(0,255,136,0.5)}
+.sc-i .stat-num{color:var(--orange);text-shadow:0 0 10px rgba(255,149,0,0.5)}
+.sc-e .stat-num{color:var(--red);text-shadow:0 0 10px rgba(255,51,85,0.5)}
+.drone-list{flex:1;overflow-y:auto;padding:8px}
+.drone-list::-webkit-scrollbar{width:4px}
+.drone-list::-webkit-scrollbar-thumb{background:rgba(0,212,255,0.3);border-radius:2px}
+.drone-item{display:flex;align-items:center;gap:10px;padding:8px 10px;border:1px solid transparent;border-radius:6px;cursor:pointer;margin-bottom:4px;transition:all 0.2s;background:rgba(0,20,50,0.4)}
+.drone-item:hover{border-color:rgba(0,212,255,0.3);background:rgba(0,40,80,0.5)}
+.drone-item.sel{border-color:var(--primary);background:rgba(0,100,180,0.2);box-shadow:0 0 10px rgba(0,212,255,0.15)}
+.ds{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.ds.active{background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse-dot 2s ease-in-out infinite}
+.ds.idle{background:var(--orange)}
+.ds.charging{background:var(--blue)}
+.ds.error{background:var(--red);animation:blink 0.4s step-end infinite}
+.d-info{flex:1;min-width:0}
+.d-id{font-family:'Orbitron',monospace;font-size:11px;color:#fff;font-weight:600}
+.d-role{font-size:10px;color:var(--dim);margin-top:1px}
+.d-metrics{display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+.d-bat{width:36px;height:6px;background:rgba(255,255,255,0.1);border-radius:3px;overflow:hidden}
+.d-bat-fill{height:100%;border-radius:3px;transition:width 1s}
+.d-sig{font-size:10px;font-family:'Orbitron',monospace}
+
+/* CENTER */
+.center-panel{flex:1;display:flex;flex-direction:column;overflow:hidden;background:rgba(2,11,24,0.5)}
+.view-content{flex:1;overflow:hidden;position:relative}
+.view{display:none;width:100%;height:100%;position:absolute;inset:0;flex-direction:column}
+.view.active{display:flex}
+.view-hdr{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:rgba(0,15,35,0.5);flex-shrink:0}
+.view-hdr-title{font-family:'Orbitron',monospace;font-size:11px;color:var(--primary);letter-spacing:2px}
+.view-hdr-info{font-size:10px;color:var(--dim)}
+.scrollable{overflow-y:auto;flex:1;padding:16px;display:flex;flex-direction:column;gap:12px}
+.scrollable::-webkit-scrollbar{width:4px}
+.scrollable::-webkit-scrollbar-thumb{background:rgba(0,212,255,0.3);border-radius:2px}
+
+/* MAP */
+#mapView{padding:0;overflow:hidden}
+#mapSvg{width:100%;height:100%}
+@keyframes node-ring{0%{r:10;opacity:0.6;stroke-width:2}100%{r:24;opacity:0;stroke-width:1}}
+@keyframes node-blink{0%,100%{opacity:1}50%{opacity:0.15}}
+.mesh-link{stroke-dasharray:6,4;animation:dash-flow 3s linear infinite}
+@keyframes dash-flow{0%{stroke-dashoffset:0}100%{stroke-dashoffset:-40}}
+
+/* TOPO */
+#topoView{overflow:hidden;align-items:center;justify-content:center;padding:0}
+#topoSvg{width:100%;height:100%}
+
+/* MONITOR */
+.monitor-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.m-stat{background:rgba(0,20,50,0.7);border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center}
+.m-stat-val{font-family:'Orbitron',monospace;font-size:28px;font-weight:700;color:var(--primary)}
+.m-stat-unit{font-size:11px;color:var(--dim);margin-top:4px}
+.m-stat-lbl{font-size:11px;color:var(--text);margin-top:6px}
+.chart-panel{background:rgba(0,20,50,0.7);border:1px solid var(--border);border-radius:8px;padding:16px;flex:1;min-height:180px}
+.chart-title{font-size:11px;color:var(--primary);letter-spacing:1px;margin-bottom:12px;font-family:'Orbitron',monospace}
+#monitorCanvas{width:100%;display:block}
+.chart-legend{display:flex;gap:16px;margin-top:8px}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--dim)}
+.ldot{width:10px;height:3px;border-radius:2px}
+
+/* TASK */
+.task-card{background:rgba(0,20,50,0.7);border:1px solid var(--border);border-radius:8px;padding:14px;transition:border-color 0.2s}
+.task-card:hover{border-color:rgba(0,212,255,0.4)}
+.task-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.task-id{font-family:'Orbitron',monospace;font-size:11px;color:var(--primary);font-weight:600}
+.ptag{padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600}
+.ptag.high{background:rgba(255,51,85,0.2);color:var(--red);border:1px solid rgba(255,51,85,0.3)}
+.ptag.med{background:rgba(255,149,0,0.2);color:var(--orange);border:1px solid rgba(255,149,0,0.3)}
+.ptag.low{background:rgba(0,212,255,0.1);color:var(--primary);border:1px solid rgba(0,212,255,0.2)}
+.task-body{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.task-field{font-size:11px}
+.task-field label{color:var(--dim);display:block;margin-bottom:2px}
+.tprog{height:4px;background:rgba(255,255,255,0.1);border-radius:2px;overflow:hidden}
+.tprog-fill{height:100%;background:linear-gradient(90deg,var(--primary),var(--green));border-radius:2px}
+.task-ftr{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+.tstatus{font-size:10px;padding:2px 8px;border-radius:3px}
+.tstatus.running{background:rgba(0,255,136,0.1);color:var(--green)}
+.tstatus.queued{background:rgba(255,149,0,0.1);color:var(--orange)}
+.tstatus.done{background:rgba(0,212,255,0.1);color:var(--primary)}
+
+/* DATA */
+.data-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.data-card{background:rgba(0,20,50,0.7);border:1px solid var(--border);border-radius:8px;padding:16px;position:relative;overflow:hidden}
+.data-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--primary),transparent)}
+.data-card-icon{font-size:24px;margin-bottom:8px}
+.data-card-val{font-family:'Orbitron',monospace;font-size:24px;font-weight:700;color:var(--primary)}
+.data-card-lbl{font-size:11px;color:var(--dim);margin-top:4px}
+.data-card-chg{font-size:10px;color:var(--green);margin-top:4px}
+
+/* MAINT */
+.maint-item{background:rgba(0,20,50,0.7);border:1px solid var(--border);border-radius:8px;padding:12px 16px;display:flex;align-items:center;gap:16px}
+.maint-drone-id{font-family:'Orbitron',monospace;font-size:12px;color:var(--primary);font-weight:600;width:80px;flex-shrink:0}
+.maint-desc{flex:1;font-size:12px;color:var(--text)}
+.mlevel{padding:2px 10px;border-radius:3px;font-size:10px;font-weight:600;flex-shrink:0}
+.mlevel.critical{background:rgba(255,51,85,0.2);color:var(--red);border:1px solid rgba(255,51,85,0.4)}
+.mlevel.severe{background:rgba(255,100,0,0.2);color:#ff6400;border:1px solid rgba(255,100,0,0.4)}
+.mlevel.warning{background:rgba(255,149,0,0.2);color:var(--orange);border:1px solid rgba(255,149,0,0.4)}
+.mlevel.info{background:rgba(0,212,255,0.1);color:var(--primary);border:1px solid rgba(0,212,255,0.3)}
+.mlevel.plan{background:rgba(100,100,100,0.2);color:#888;border:1px solid rgba(100,100,100,0.3)}
+.maint-st{font-size:10px;color:var(--dim);flex-shrink:0;width:60px;text-align:right}
+
+/* RIGHT */
+.right-panel{width:320px;min-width:320px;background:var(--panel);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.detail-hdr{padding:14px 16px;border-bottom:1px solid var(--border);position:relative}
+.corner{position:absolute;width:10px;height:10px;border-color:var(--primary)}
+.c-tl{top:6px;left:6px;border-top:1px solid;border-left:1px solid}
+.c-tr{top:6px;right:6px;border-top:1px solid;border-right:1px solid}
+.c-bl{bottom:6px;left:6px;border-bottom:1px solid;border-left:1px solid}
+.c-br{bottom:6px;right:6px;border-bottom:1px solid;border-right:1px solid}
+.detail-id{font-family:'Orbitron',monospace;font-size:16px;color:#fff;font-weight:700}
+.detail-model{font-size:11px;color:var(--dim);margin-top:3px}
+.sbadges{display:flex;gap:6px;margin-top:8px}
+.sbadge{padding:2px 8px;border-radius:3px;font-size:10px;font-weight:600}
+.sbadge.active{background:rgba(0,255,136,0.15);color:var(--green);border:1px solid rgba(0,255,136,0.3)}
+.sbadge.idle{background:rgba(255,149,0,0.15);color:var(--orange);border:1px solid rgba(255,149,0,0.3)}
+.sbadge.charging{background:rgba(0,153,204,0.15);color:var(--blue);border:1px solid rgba(0,153,204,0.3)}
+.sbadge.error{background:rgba(255,51,85,0.15);color:var(--red);border:1px solid rgba(255,51,85,0.3)}
+.sbadge.role{background:rgba(0,212,255,0.1);color:var(--primary);border:1px solid rgba(0,212,255,0.3)}
+.metrics-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;padding:12px;border-bottom:1px solid var(--border)}
+.metric-cell{background:rgba(0,20,50,0.6);border:1px solid var(--border);border-radius:6px;padding:10px 8px;text-align:center}
+.metric-val{font-family:'Orbitron',monospace;font-size:16px;font-weight:700;color:var(--primary);line-height:1.2}
+.metric-unit{font-size:9px;color:var(--dim);margin-top:1px}
+.metric-lbl{font-size:9px;color:var(--dim);margin-top:4px;letter-spacing:0.5px}
+.bat-sec{padding:10px 16px;border-bottom:1px solid var(--border)}
+.bat-lbl{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.bat-lbl span:first-child{font-size:11px;color:var(--dim)}
+.bat-pct{font-family:'Orbitron',monospace;font-size:13px;font-weight:600}
+.bat-bar{height:8px;background:rgba(255,255,255,0.1);border-radius:4px;overflow:hidden}
+.bat-fill{height:100%;border-radius:4px;transition:width 1s;background:linear-gradient(90deg,var(--green),#00cc66)}
+.bat-fill.med{background:linear-gradient(90deg,var(--orange),#cc7700)}
+.bat-fill.low{background:linear-gradient(90deg,var(--red),#cc0022)}
+.task-sec{flex:1;overflow-y:auto;padding:10px;border-bottom:1px solid var(--border)}
+.task-sec::-webkit-scrollbar{width:4px}
+.task-sec::-webkit-scrollbar-thumb{background:rgba(0,212,255,0.2);border-radius:2px}
+.sec-title{font-size:10px;color:var(--primary);letter-spacing:1.5px;font-family:'Orbitron',monospace;margin-bottom:8px}
+.task-mini{display:flex;align-items:center;gap:8px;padding:6px 8px;background:rgba(0,20,50,0.5);border-radius:4px;margin-bottom:4px;border-left:2px solid transparent}
+.task-mini.running{border-left-color:var(--green)}
+.task-mini.queued{border-left-color:var(--orange)}
+.task-mini.done{border-left-color:var(--dim)}
+.tm-info{flex:1}
+.tm-name{font-size:11px;color:var(--text)}
+.tm-zone{font-size:10px;color:var(--dim)}
+.tm-st{font-size:10px}
+.tm-st.running{color:var(--green)}.tm-st.queued{color:var(--orange)}.tm-st.done{color:var(--dim)}
+.action-btns{padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.abtn{padding:9px 8px;border-radius:6px;border:1px solid;font-family:'Noto Sans SC',sans-serif;font-size:11px;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;gap:5px;letter-spacing:0.5px}
+.abtn.ab-p{background:rgba(0,212,255,0.1);border-color:rgba(0,212,255,0.4);color:var(--primary)}
+.abtn.ab-p:hover{background:rgba(0,212,255,0.25);box-shadow:0 0 12px rgba(0,212,255,0.2)}
+.abtn.ab-s{background:rgba(0,255,136,0.1);border-color:rgba(0,255,136,0.4);color:var(--green)}
+.abtn.ab-s:hover{background:rgba(0,255,136,0.2);box-shadow:0 0 12px rgba(0,255,136,0.2)}
+.abtn.ab-w{background:rgba(255,149,0,0.1);border-color:rgba(255,149,0,0.4);color:var(--orange)}
+.abtn.ab-w:hover{background:rgba(255,149,0,0.2);box-shadow:0 0 12px rgba(255,149,0,0.2)}
+.abtn.ab-d{background:rgba(255,51,85,0.1);border-color:rgba(255,51,85,0.4);color:var(--red)}
+.abtn.ab-d:hover{background:rgba(255,51,85,0.25);box-shadow:0 0 12px rgba(255,51,85,0.2)}
+
+/* FOOTER */
+footer{height:28px;min-height:28px;background:rgba(0,10,25,0.95);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 16px;font-size:10px}
+.fstatus{display:flex;align-items:center;gap:16px}
+.fitem{display:flex;align-items:center;gap:5px;color:var(--dim)}
+.fdot{width:5px;height:5px;border-radius:50%}
+.fitem.ok .fdot{background:var(--green)}
+.fitem.warn .fdot{background:var(--orange)}
+.fitem.err .fdot{background:var(--red);animation:blink 0.5s step-end infinite}
+.fright{display:flex;align-items:center;gap:16px;color:var(--dim)}
+.fright span{font-family:'Orbitron',monospace;font-size:10px}
+
+/* MODALS */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,5,15,0.85);backdrop-filter:blur(4px);z-index:100;align-items:center;justify-content:center}
+.modal-overlay.show{display:flex}
+.modal{width:480px;max-height:80vh;overflow-y:auto;background:rgba(2,18,40,0.98);border:1px solid rgba(0,212,255,0.3);border-radius:10px;box-shadow:0 0 40px rgba(0,212,255,0.15)}
+.modal::-webkit-scrollbar{width:4px}
+.modal::-webkit-scrollbar-thumb{background:rgba(0,212,255,0.3);border-radius:2px}
+.modal-hdr{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-title{font-family:'Orbitron',monospace;font-size:13px;color:var(--primary);letter-spacing:2px}
+.modal-close{background:none;border:none;color:var(--dim);font-size:20px;cursor:pointer;line-height:1;transition:color 0.2s}
+.modal-close:hover{color:var(--primary)}
+.modal-body{padding:20px}
+.form-group{margin-bottom:14px}
+.form-label{font-size:11px;color:var(--dim);letter-spacing:0.5px;margin-bottom:5px;display:block}
+.form-control{width:100%;padding:8px 12px;background:rgba(0,20,50,0.6);border:1px solid var(--border);border-radius:5px;color:var(--text);font-family:'Noto Sans SC',sans-serif;font-size:12px;outline:none;transition:border-color 0.2s}
+.form-control:focus{border-color:var(--primary);box-shadow:0 0 8px rgba(0,212,255,0.15)}
+.form-control option{background:#021230}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.modal-ftr{padding:16px 20px;border-top:1px solid var(--border);display:flex;gap:10px;justify-content:flex-end}
+.btn{padding:8px 20px;border-radius:5px;font-family:'Noto Sans SC',sans-serif;font-size:12px;cursor:pointer;transition:all 0.2s}
+.btn-p{background:rgba(0,212,255,0.15);border:1px solid rgba(0,212,255,0.4);color:var(--primary)}
+.btn-p:hover{background:rgba(0,212,255,0.3);box-shadow:0 0 12px rgba(0,212,255,0.2)}
+.btn-c{background:transparent;border:1px solid var(--border);color:var(--dim)}
+.btn-c:hover{border-color:var(--primary);color:var(--text)}
+
+/* TOAST */
+#toastContainer{position:fixed;bottom:40px;right:20px;z-index:200;display:flex;flex-direction:column;gap:8px}
+@keyframes t-in{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:none}}
+@keyframes t-out{from{opacity:1;transform:none}to{opacity:0;transform:translateX(20px)}}
+.toast{padding:10px 16px;border-radius:6px;font-size:12px;background:rgba(0,30,60,0.95);border-left:3px solid var(--primary);color:var(--text);box-shadow:0 4px 20px rgba(0,0,0,0.5);animation:t-in 0.3s ease;max-width:300px}
+.toast.success{border-left-color:var(--green)}
+.toast.warning{border-left-color:var(--orange)}
+.toast.error{border-left-color:var(--red)}
+.toast.out{animation:t-out 0.3s ease forwards}
+
+/* ===== LOGIN ===== */
+#loginPage{position:fixed;inset:0;z-index:9999;background:#020b18;display:flex;align-items:center;justify-content:center}
+#loginPage.hide{display:none}
+.lgbg{position:absolute;inset:0;background-image:linear-gradient(rgba(0,212,255,0.05) 1px,transparent 1px),linear-gradient(90deg,rgba(0,212,255,0.05) 1px,transparent 1px);background-size:40px 40px}
+.lgbg::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 70% 60% at 50% 50%,rgba(0,80,160,0.15) 0%,transparent 70%)}
+.lgbox{position:relative;z-index:2;width:420px;background:rgba(0,20,50,0.96);border:1px solid rgba(0,212,255,0.35);border-radius:16px;padding:42px;box-shadow:0 0 80px rgba(0,212,255,0.1)}
+.lglogo{text-align:center;margin-bottom:28px}
+.lgicon{width:68px;height:68px;background:rgba(0,212,255,0.08);border:2px solid rgba(0,212,255,0.3);border-radius:16px;display:inline-flex;align-items:center;justify-content:center;font-size:30px;margin-bottom:14px}
+.lgtitle{font-size:17px;font-weight:700;color:#fff;letter-spacing:2px;margin-bottom:5px}
+.lgsub{font-family:'Orbitron',monospace;font-size:9px;color:#00d4ff;letter-spacing:3px}
+.lgline{height:1px;background:linear-gradient(90deg,transparent,rgba(0,212,255,0.3),transparent);margin:22px 0}
+.lglbl{font-size:11px;color:#8ab8d0;letter-spacing:1px;margin-bottom:6px;display:block;text-transform:uppercase}
+.lgwrap{position:relative;margin-bottom:14px}
+.lginput{width:100%;background:rgba(0,30,70,0.8);border:1px solid rgba(0,212,255,0.2);border-radius:8px;padding:11px 14px 11px 42px;color:#fff;font-size:14px;font-family:'Noto Sans SC',sans-serif;outline:none;transition:all 0.2s}
+.lginput:focus{border-color:#00d4ff;box-shadow:0 0 10px rgba(0,212,255,0.12)}
+.lginput::placeholder{color:rgba(139,184,208,0.35)}
+.lgii{position:absolute;left:14px;top:50%;transform:translateY(-50%);font-size:15px}
+.lgerr{color:#ff3355;font-size:12px;min-height:18px;text-align:center;margin-bottom:8px;display:block}
+.lgbtn{width:100%;padding:13px;background:linear-gradient(135deg,#005fa3,#0099c8);border:none;border-radius:8px;color:#fff;font-size:14px;font-weight:700;font-family:'Noto Sans SC',sans-serif;cursor:pointer;letter-spacing:2px;transition:all 0.2s}
+.lgbtn:hover{background:linear-gradient(135deg,#0077bb,#00aadd);box-shadow:0 0 18px rgba(0,212,255,0.22)}
+.lgfoot{margin-top:20px;text-align:center;font-size:11px;color:rgba(139,184,208,0.45);line-height:1.8}
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-7px)}40%,80%{transform:translateX(7px)}}
+.lgbox.shake{animation:shake 0.35s ease}
+
+/* ===== 原位监测子系统嵌入 ===== */
+main.insitu-expanded .left-panel,
+main.insitu-expanded .right-panel,
+main.derun-expanded .left-panel,
+main.derun-expanded .right-panel{display:none!important}
+main.insitu-expanded .center-panel,
+main.derun-expanded .center-panel{width:100%;flex:1 1 auto}
+
+#insituView{background:rgba(2,11,24,0.78)}
+.insitu-toolbar{
+  height:44px;min-height:44px;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 14px;border-bottom:1px solid var(--border);
+  background:linear-gradient(180deg,rgba(0,22,48,0.92),rgba(0,12,30,0.86));
+}
+.insitu-title{
+  display:flex;align-items:center;gap:10px;
+  font-family:'Orbitron',monospace;font-size:11px;color:var(--primary);
+  letter-spacing:2px;font-weight:700;
+}
+.insitu-sub{font-family:'Noto Sans SC',sans-serif;font-size:10px;color:var(--dim);letter-spacing:0.5px;margin-left:6px}
+.insitu-status-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.insitu-pill{
+  display:flex;align-items:center;gap:6px;
+  padding:4px 10px;border-radius:14px;
+  border:1px solid rgba(0,212,255,0.25);
+  background:rgba(0,212,255,0.07);
+  font-size:10px;color:var(--text);white-space:nowrap;
+}
+.insitu-pill.ok{border-color:rgba(0,255,136,0.25);background:rgba(0,255,136,0.07);color:var(--green)}
+.insitu-pill.warn{border-color:rgba(255,149,0,0.28);background:rgba(255,149,0,0.08);color:var(--orange)}
+.insitu-dot{width:6px;height:6px;border-radius:50%;background:currentColor;box-shadow:0 0 7px currentColor}
+.insitu-actions{display:flex;align-items:center;gap:8px}
+.insitu-btn{
+  padding:5px 10px;border:1px solid var(--border);border-radius:4px;
+  background:rgba(0,212,255,0.08);color:var(--primary);
+  font-family:'Noto Sans SC',sans-serif;font-size:10px;cursor:pointer;
+}
+.insitu-btn:hover{border-color:var(--primary);background:rgba(0,212,255,0.18)}
+.insitu-frame-wrap{flex:1;min-height:0;position:relative;background:#020b18;overflow:hidden}
+.insitu-frame{
+  width:100%;height:100%;border:0;display:block;background:#07111f;
+}
+.insitu-note{
+  position:absolute;left:12px;bottom:10px;z-index:2;
+  font-size:10px;color:rgba(200,232,240,0.52);
+  background:rgba(0,10,25,0.58);border:1px solid rgba(0,212,255,0.16);
+  padding:4px 8px;border-radius:4px;pointer-events:none;
+}
+
+/* ===== 地图全屏：保留线上版本功能 ===== */
+#mapView{position:relative}
+.map-fullscreen-btn{
+  position:absolute;top:10px;right:10px;z-index:200;
+  background:rgba(0,20,50,0.9);
+  border:1px solid rgba(0,212,255,0.5);
+  border-radius:6px;padding:6px 14px;
+  color:#00d4ff;font-size:14px;cursor:pointer;
+  display:flex;align-items:center;gap:6px;transition:all 0.2s;
+  font-family:'Noto Sans SC',sans-serif;backdrop-filter:blur(4px)
+}
+.map-fullscreen-btn:hover{background:rgba(0,40,80,0.95);box-shadow:0 0 12px rgba(0,212,255,0.3)}
+#mapView.is-fullscreen{
+  position:fixed!important;inset:0!important;z-index:600!important;
+  width:100vw!important;height:100vh!important;background:#020b18!important
+}
+#mapView.is-fullscreen .map-fullscreen-btn{top:16px;right:16px;padding:8px 16px;font-size:15px;z-index:610}
+
+
+/* ===== V4 leader demo mode: reduce chrome around embedded subsystem ===== */
+.insitu-toolbar{display:none!important}
+.insitu-frame-wrap{height:100%;flex:1;background:#06111f}
+.insitu-note{display:none!important}
+.insitu-frame{width:100%;height:100%;border:0;background:#06111f;display:block}
+.insitu-actions-float{position:absolute;right:14px;top:12px;z-index:6;display:flex;gap:8px}
+.insitu-actions-float .insitu-btn{height:32px;padding:0 12px;background:rgba(5,22,40,.72);backdrop-filter:blur(4px)}
+#insituView{background:#06111f}
+.alert-hidden-for-insitu{display:none!important}
+
+/* ===== 水样后处理模块嵌入 ===== */
+#derunView{background:#06111f}
+.derun-frame-wrap{height:100%;flex:1;min-height:0;position:relative;background:#06111f;overflow:hidden}
+.derun-frame{width:100%;height:100%;border:0;background:#06111f;display:block}
+.derun-actions-float{position:absolute;right:14px;top:12px;z-index:6;display:flex;gap:8px}
+.derun-btn{height:32px;padding:0 12px;border:1px solid rgba(70,217,255,.35);border-radius:8px;background:rgba(11,28,50,.86);color:var(--primary);font-family:'Noto Sans SC',sans-serif;font-size:13px;cursor:pointer;backdrop-filter:blur(4px)}
+.derun-btn:hover{border-color:var(--primary);background:rgba(70,217,255,.16)}
+
+
+
+/* ===== V5 领导演示版：态势地图页观感优化 ===== */
+:root{
+  --bg:#06111f;--panel:rgba(7,25,48,.86);--border:rgba(78,164,230,.20);
+  --primary:#48d7ff;--green:#64ee8d;--orange:#ffb347;--red:#ff5468;
+  --text:#e8f4ff;--dim:#88a8c8;
+}
+html,body{font-size:14px;background:#06111f;color:var(--text)}
+body::before{opacity:.45;background-size:64px 64px}
+body::after{background:radial-gradient(ellipse 75% 55% at 45% 30%,rgba(18,82,140,.18) 0%,transparent 72%)}
+.scanline{display:none}
+#app{background:linear-gradient(180deg,#06111f 0%,#04101e 100%)}
+
+/* 顶部：更像正式指挥大屏，减少零碎感 */
+header{height:70px;min-height:70px;padding:0 22px;background:linear-gradient(180deg,rgba(5,18,38,.98),rgba(5,15,32,.96));border-bottom:1px solid rgba(72,215,255,.22);box-shadow:0 8px 32px rgba(0,0,0,.22)}
+.header-left{gap:14px}.header-left svg{width:44px;height:44px}.header-title{font-size:18px;letter-spacing:1.8px;line-height:1.18}.header-title span{font-size:10px;letter-spacing:4px;color:#58dfff;opacity:.86;margin-top:5px}
+.header-center{gap:12px}.hstatus{height:32px;padding:0 16px;border-radius:18px;font-size:13px;font-weight:600;background:rgba(20,85,70,.28);border-color:rgba(100,238,141,.35)}.hstatus.warn{background:rgba(130,75,10,.22);border-color:rgba(255,179,71,.38);color:var(--orange)}.sdot{width:7px;height:7px;animation:none}
+.header-right{gap:16px}.sys-time{font-size:22px;letter-spacing:2.5px;color:#8ee9ff}.sys-date{font-size:12px;color:#8fb1d0;margin-top:2px}.hbtn{height:34px;padding:0 16px;border-radius:6px;font-size:12px;color:#aeefff;background:rgba(16,55,90,.42);border-color:rgba(72,215,255,.26)}
+
+/* 告警条保留，但压低视觉侵占 */
+#alertBanner.show{height:30px;min-height:30px}#alertBanner{padding:0 20px;background:linear-gradient(90deg,rgba(206,43,61,.86),rgba(108,26,46,.82));font-size:13px;border-bottom:1px solid rgba(255,84,104,.35)}.alert-icon{animation:none;font-size:13px}
+
+/* 菜单更大更清晰 */
+nav{height:52px;min-height:52px;padding:0 18px;background:rgba(5,18,38,.94);border-bottom:1px solid rgba(72,215,255,.16);gap:8px}.tab{font-size:14px;padding:0 18px;color:#9db8d0;border-radius:0}.tab.active{color:#73e4ff;font-weight:700}.tab.active::after{height:3px;left:8px;right:8px;border-radius:2px;background:#43d7ff}.tab:hover{color:#dff7ff;background:rgba(72,215,255,.05)}
+
+/* 主区：左右面板卡片化，中心地图突出 */
+main{background:#06111f}.left-panel{width:292px;min-width:292px;background:rgba(6,22,43,.86);border-right:1px solid rgba(72,215,255,.20)}.right-panel{width:330px;min-width:330px;background:rgba(6,22,43,.90);border-left:1px solid rgba(72,215,255,.20)}.center-panel{background:linear-gradient(180deg,rgba(6,20,40,.72),rgba(4,14,27,.72))}
+.panel-hdr{padding:14px 16px;border-bottom:1px solid rgba(72,215,255,.16)}.panel-title{font-family:'Noto Sans SC',sans-serif;font-size:14px;font-weight:700;letter-spacing:1px;color:#aeefff}
+.fleet-stats{padding:14px 12px;gap:10px}.stat-card{border-radius:8px;padding:12px 6px;background:linear-gradient(180deg,rgba(18,59,95,.55),rgba(7,28,52,.55));border-color:rgba(72,215,255,.24)}.stat-num{font-size:30px}.stat-label{font-size:12px;color:#b8cde0;margin-top:5px}.drone-list{padding:8px 10px}.drone-item{min-height:56px;margin-bottom:7px;border-radius:8px;padding:9px 12px;background:rgba(12,38,68,.58);border-color:rgba(255,255,255,.04)}.drone-item.sel{background:linear-gradient(90deg,rgba(25,98,150,.52),rgba(11,43,76,.66));border-color:#43d7ff;box-shadow:0 0 0 1px rgba(67,215,255,.16) inset,0 8px 24px rgba(0,0,0,.16)}.ds{width:9px;height:9px}.ds.active{animation:none}.d-id{font-size:14px;letter-spacing:.6px}.d-role{font-size:11px;color:#8fb1d0;margin-top:4px}.d-bat{width:50px;height:7px}.d-sig{font-size:12px}
+
+/* 地图区：让领导第一眼看地图，不被边框和网格抢戏 */
+#mapView{padding:14px}#mapSvg{width:100%;height:100%;border:1px solid rgba(72,215,255,.18);border-radius:14px;background:#071c34;box-shadow:inset 0 0 80px rgba(0,120,200,.12),0 12px 36px rgba(0,0,0,.22)}.mesh-link{stroke-dasharray:7,6;animation:none}.map-fullscreen-btn{right:24px!important;top:24px!important;height:38px!important;padding:0 16px!important;border-radius:8px!important;font-size:14px!important;background:rgba(8,35,64,.82)!important;border-color:rgba(72,215,255,.45)!important;box-shadow:0 8px 24px rgba(0,0,0,.18)!important}
+
+/* 右侧详情：关键数据加大 */
+.detail-hdr{padding:18px 18px 14px}.detail-id{font-size:23px;letter-spacing:.8px}.detail-model{font-size:13px;margin-top:7px;color:#9ebbd6}.sbadges{margin-top:12px}.sbadge{font-size:12px;padding:4px 11px;border-radius:5px}.metrics-grid{padding:14px;gap:9px}.metric-cell{border-radius:8px;padding:13px 6px;background:linear-gradient(180deg,rgba(18,59,95,.58),rgba(8,31,58,.55));border-color:rgba(72,215,255,.20)}.metric-val{font-size:23px;color:#78e7ff}.metric-unit{font-size:11px;color:#b6c8d8}.metric-lbl{font-size:11px;color:#9ebbd6;margin-top:5px}.bat-sec{padding:13px 16px}.bat-lbl span:first-child{font-size:13px}.bat-pct{font-size:15px}.bat-bar{height:10px}.task-sec{padding:13px 14px}.sec-title{font-family:'Noto Sans SC',sans-serif;font-size:14px;font-weight:700;color:#aeefff}.task-mini{padding:10px 11px;border-radius:8px;margin-bottom:8px;background:rgba(12,38,68,.58)}.tm-name{font-size:14px}.tm-zone{font-size:12px;margin-top:3px}.tm-st{font-size:12px;font-weight:700}.action-btns{padding:14px;gap:10px}.abtn{min-height:44px;border-radius:8px;font-size:14px;font-weight:700}
+
+/* 底部状态：清晰但不抢占 */
+footer{height:32px;min-height:32px;background:rgba(3,13,26,.98);font-size:11px;border-top:1px solid rgba(72,215,255,.16)}.fstatus{gap:18px}.fitem{color:#91acc5}.fright{font-size:11px}
+
+/* 低高度屏幕适配 */
+@media (max-height:760px){header{height:64px;min-height:64px}.header-title{font-size:16px}.sys-time{font-size:19px}nav{height:46px;min-height:46px}.tab{font-size:13px;padding:0 14px}#alertBanner.show{height:28px;min-height:28px}.fleet-stats{padding:10px}.stat-num{font-size:26px}.drone-item{min-height:50px}.metric-cell{padding:9px 4px}.metric-val{font-size:20px}.abtn{min-height:38px}}
+
+
+
+/* =========================================================
+   V6 全系统统一视觉版：以“原位监测页”为母版
+   深海蓝 / 卡片化 / 大字号 / 领导演示友好
+   ========================================================= */
+:root{
+  --bg:#06111f!important;
+  --primary:#46d9ff!important;
+  --green:#44e28a!important;
+  --orange:#ffb23f!important;
+  --red:#ff4d5f!important;
+  --blue:#2b84cf!important;
+  --panel:rgba(11,28,50,.94)!important;
+  --panel2:#10263f!important;
+  --border:rgba(70,217,255,.24)!important;
+  --border-strong:rgba(70,217,255,.46)!important;
+  --text:#eaf7ff!important;
+  --dim:#83a8c0!important;
+  --shadow:0 18px 44px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.03);
+}
+html,body{
+  font-size:15px!important;
+  background:#06111f!important;
+  color:var(--text)!important;
+  letter-spacing:.2px;
+}
+body::before{background-image:linear-gradient(rgba(70,217,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(70,217,255,.025) 1px,transparent 1px)!important;background-size:56px 56px!important;opacity:.55}
+body::after{background:radial-gradient(ellipse 70% 55% at 44% 36%,rgba(33,104,160,.16) 0%,transparent 72%)!important}
+.scanline{opacity:.18;height:1px!important}
+
+/* 登录页：同一套深海蓝演示风 */
+#loginPage{background:#06111f!important}
+.lgbg{background-size:56px 56px!important;opacity:.5}
+.lgbox{width:460px!important;padding:42px 46px!important;background:rgba(11,28,50,.96)!important;border:1px solid var(--border-strong)!important;border-radius:14px!important;box-shadow:0 24px 80px rgba(0,0,0,.46),0 0 0 1px rgba(255,255,255,.03) inset!important}
+.lgicon{width:64px!important;height:64px!important;border-radius:14px!important;background:rgba(70,217,255,.08)!important;border-color:rgba(70,217,255,.42)!important}
+.lgtitle{font-size:22px!important;letter-spacing:1.5px!important}.lgsub{font-size:10px!important;letter-spacing:2.5px!important;color:var(--primary)!important}.lglbl{font-size:13px!important;color:var(--dim)!important}.lginput{height:46px!important;font-size:15px!important;background:rgba(6,17,31,.82)!important;border-color:rgba(70,217,255,.22)!important;border-radius:8px!important}.lginput:focus{border-color:var(--primary)!important;box-shadow:0 0 0 3px rgba(70,217,255,.10)!important}.lgbtn{height:48px!important;border-radius:8px!important;background:linear-gradient(135deg,#1466a6,#1a91c8)!important;font-size:15px!important}.lgfoot{font-size:12px!important;color:rgba(131,168,192,.62)!important}
+
+/* 顶部统一 */
+header{height:72px!important;min-height:72px!important;padding:0 28px!important;background:linear-gradient(180deg,rgba(6,17,31,.98),rgba(8,22,39,.96))!important;border-bottom:1px solid var(--border)!important;box-shadow:0 10px 30px rgba(0,0,0,.28)!important}
+.header-left{gap:18px!important}.header-left svg{width:46px!important;height:46px!important;filter:drop-shadow(0 0 10px rgba(70,217,255,.2))}.header-title{font-size:20px!important;font-weight:800!important;letter-spacing:1.4px!important;line-height:1.18!important}.header-title span{font-size:10px!important;letter-spacing:3.4px!important;color:rgba(70,217,255,.85)!important;margin-top:6px!important}.header-center{gap:14px!important}.hstatus{height:36px!important;padding:0 18px!important;border-radius:10px!important;font-size:14px!important;font-weight:700!important;background:rgba(68,226,138,.08)!important;border-color:rgba(68,226,138,.34)!important}.hstatus.warn{background:rgba(255,178,63,.08)!important;border-color:rgba(255,178,63,.36)!important}.sdot{width:7px!important;height:7px!important}.sys-time{font-size:24px!important;letter-spacing:3px!important}.sys-date{font-size:12px!important;color:var(--dim)!important;margin-top:3px}.hbtn{height:40px!important;padding:0 18px!important;border-radius:8px!important;font-size:13px!important;color:var(--primary)!important;background:rgba(70,217,255,.07)!important;border-color:rgba(70,217,255,.34)!important}.hbtn:hover{background:rgba(70,217,255,.14)!important;border-color:var(--primary)!important}
+
+/* 告警条与导航 */
+#alertBanner{height:34px!important;min-height:34px!important;padding:0 24px!important;background:linear-gradient(90deg,rgba(176,42,58,.92),rgba(101,24,52,.92))!important;border-bottom:1px solid rgba(255,77,95,.35)!important;font-size:14px!important;font-weight:700!important}
+#alertBanner:not(.show){height:0!important;min-height:0!important;padding-top:0!important;padding-bottom:0!important}
+nav{height:58px!important;min-height:58px!important;padding:0 22px!important;gap:6px!important;background:rgba(8,22,39,.96)!important;border-bottom:1px solid var(--border)!important;box-shadow:0 8px 24px rgba(0,0,0,.16)!important}.tab{height:58px!important;padding:0 22px!important;border-radius:0!important;font-size:15px!important;font-weight:700!important;color:rgba(234,247,255,.68)!important;letter-spacing:.5px!important}.tab:hover{color:var(--text)!important;background:rgba(70,217,255,.045)!important}.tab.active{color:var(--primary)!important;background:linear-gradient(180deg,transparent,rgba(70,217,255,.08))!important}.tab::after{height:3px!important;background:var(--primary)!important;box-shadow:0 0 12px rgba(70,217,255,.65)!important}
+
+/* 主结构 */
+main{background:linear-gradient(180deg,#071522,#06111f)!important}.left-panel{width:340px!important;min-width:340px!important;background:rgba(11,28,50,.90)!important;border-right:1px solid var(--border)!important}.right-panel{width:378px!important;min-width:378px!important;background:rgba(11,28,50,.92)!important;border-left:1px solid var(--border)!important}.center-panel{background:rgba(6,17,31,.66)!important}.panel-hdr{height:50px!important;padding:0 18px!important;background:rgba(16,38,63,.42)!important}.panel-title,.view-hdr-title,.sec-title{font-size:14px!important;color:var(--primary)!important;letter-spacing:1.5px!important;font-weight:800!important}.view-hdr{height:56px!important;padding:0 20px!important;background:rgba(11,28,50,.75)!important;border-bottom:1px solid var(--border)!important}.view-hdr-info{font-size:12px!important;color:var(--dim)!important}
+
+/* 舰队卡片与列表 */
+.fleet-stats{padding:16px!important;gap:10px!important}.stat-card{height:78px!important;border-radius:10px!important;background:rgba(16,38,63,.76)!important;border:1px solid rgba(70,217,255,.22)!important;box-shadow:var(--shadow)!important}.stat-num{font-size:32px!important}.stat-label{font-size:13px!important;color:var(--text)!important;margin-top:6px!important}.drone-list{padding:12px!important}.drone-item{min-height:58px!important;margin-bottom:8px!important;padding:10px 14px!important;border-radius:9px!important;background:rgba(16,38,63,.48)!important;border:1px solid rgba(70,217,255,.10)!important}.drone-item:hover{background:rgba(16,56,85,.62)!important;border-color:rgba(70,217,255,.30)!important}.drone-item.sel{background:rgba(24,80,120,.45)!important;border-color:rgba(70,217,255,.75)!important;box-shadow:0 0 0 1px rgba(70,217,255,.20) inset,0 10px 28px rgba(0,0,0,.20)!important}.ds{width:9px!important;height:9px!important}.d-id{font-size:15px!important;letter-spacing:.7px!important}.d-role{font-size:12px!important;color:var(--dim)!important;margin-top:4px!important}.d-bat{width:52px!important;height:7px!important}.d-sig{font-size:12px!important;margin-top:2px!important}
+
+/* 态势地图主画布 */
+#mapView{padding:18px!important;background:radial-gradient(ellipse at 50% 40%,rgba(31,89,132,.10),transparent 70%)!important;position:relative!important}#mapSvg{border-radius:14px!important;border:1px solid rgba(70,217,255,.24)!important;background:#071c34!important;box-shadow:var(--shadow),inset 0 0 85px rgba(30,115,180,.12)!important}.mesh-link{stroke-dasharray:7,7!important;animation:none!important}.map-fullscreen-btn{height:40px!important;padding:0 16px!important;border-radius:8px!important;font-size:14px!important;background:rgba(16,38,63,.84)!important;border-color:rgba(70,217,255,.50)!important;color:var(--primary)!important}
+
+/* 右侧无人机详情 */
+.detail-hdr{padding:20px 20px 16px!important;background:rgba(16,38,63,.44)!important}.corner{display:none!important}.detail-id{font-size:24px!important;letter-spacing:1px!important}.detail-model{font-size:13px!important;color:var(--dim)!important;margin-top:8px!important}.sbadges{margin-top:12px!important}.sbadge{font-size:13px!important;padding:5px 12px!important;border-radius:7px!important}.metrics-grid{grid-template-columns:repeat(3,1fr)!important;gap:10px!important;padding:16px!important}.metric-cell{height:76px!important;padding:10px 8px!important;border-radius:9px!important;background:rgba(16,38,63,.72)!important;border:1px solid rgba(70,217,255,.18)!important}.metric-val{font-size:24px!important;color:#72e5ff!important}.metric-unit{font-size:12px!important;color:var(--dim)!important}.metric-lbl{font-size:12px!important;color:var(--text)!important;margin-top:5px!important}.bat-sec{padding:16px 20px!important}.bat-lbl span:first-child{font-size:14px!important}.bat-pct{font-size:16px!important}.bat-bar{height:11px!important;border-radius:999px!important}.task-sec{padding:16px 18px!important}.task-mini{min-height:58px!important;border-radius:9px!important;padding:10px 12px!important;background:rgba(16,38,63,.55)!important}.tm-name{font-size:15px!important}.tm-zone{font-size:12px!important;margin-top:4px!important}.tm-st{font-size:13px!important;font-weight:800!important}.action-btns{padding:16px!important;gap:10px!important}.abtn{min-height:50px!important;border-radius:9px!important;font-size:15px!important;font-weight:800!important}
+
+/* 其它页面统一卡片化 */
+.scrollable{padding:20px!important;gap:16px!important}.monitor-stats{gap:14px!important}.m-stat,.chart-panel,.task-card,.data-card,.maint-item{background:rgba(11,28,50,.86)!important;border:1px solid rgba(70,217,255,.20)!important;border-radius:12px!important;box-shadow:var(--shadow)!important}.m-stat{padding:22px 16px!important}.m-stat-val{font-size:36px!important;color:#72e5ff!important}.m-stat-unit,.m-stat-lbl{font-size:13px!important;color:var(--dim)!important}.chart-panel{padding:20px!important}.chart-title{font-size:15px!important;color:var(--primary)!important}.legend-item{font-size:13px!important}.task-card{padding:18px!important}.task-id{font-size:14px!important}.ptag{font-size:12px!important;padding:4px 10px!important;border-radius:7px!important}.task-body{gap:12px!important}.task-field{font-size:14px!important}.task-field label{font-size:12px!important;color:var(--dim)!important}.task-ftr{font-size:13px!important}.tstatus{font-size:12px!important;padding:4px 10px!important;border-radius:7px!important}.data-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:16px!important}.data-card{min-height:142px!important;padding:22px!important}.data-card-icon{font-size:28px!important}.data-card-val{font-size:32px!important;color:#72e5ff!important}.data-card-lbl{font-size:14px!important;color:var(--text)!important}.data-card-chg{font-size:13px!important}.maint-item{min-height:66px!important;padding:14px 18px!important}.maint-drone-id{font-size:15px!important;width:96px!important}.maint-desc{font-size:14px!important}.mlevel{font-size:12px!important;padding:5px 12px!important;border-radius:7px!important}.maint-st{font-size:13px!important;width:72px!important}
+
+/* 网络拓扑统一 */
+#topoView{padding:18px!important;background:#06111f!important}#topoSvg{width:100%!important;height:100%!important;border-radius:14px!important;border:1px solid rgba(70,217,255,.24)!important;background:#071c34!important;box-shadow:var(--shadow),inset 0 0 80px rgba(30,115,180,.10)!important}
+
+/* 弹窗统一 */
+.modal{border-radius:12px!important;background:rgba(11,28,50,.98)!important;border:1px solid var(--border-strong)!important;box-shadow:0 26px 80px rgba(0,0,0,.48)!important}.modal-hdr{padding:18px 22px!important}.modal-title{font-size:16px!important}.form-label{font-size:13px!important}.form-control{height:auto!important;min-height:42px!important;border-radius:8px!important;background:rgba(6,17,31,.88)!important;font-size:14px!important}.btn{height:40px!important;border-radius:8px!important;font-size:14px!important}.toast{font-size:14px!important;border-radius:8px!important;background:rgba(11,28,50,.96)!important}
+
+/* 底栏弱化 */
+footer{height:34px!important;min-height:34px!important;background:rgba(6,17,31,.96)!important;border-top:1px solid rgba(70,217,255,.18)!important;font-size:12px!important}.fstatus{gap:22px!important}.fitem{font-size:12px!important}.fright span{font-size:12px!important;color:var(--dim)!important}
+
+/* 原位监测嵌入页保持全屏，但与 V6 外框一致 */
+main.insitu-expanded .center-panel{background:#06111f!important}.insitu-actions-float .insitu-btn{font-size:13px!important;border-radius:8px!important;background:rgba(11,28,50,.86)!important;border-color:rgba(70,217,255,.35)!important;color:var(--primary)!important}
+
+</style>
+</head>
+<body>
+<div id="loginPage">
+  <div class="lgbg"></div>
+  <div class="lgbox" id="lgbox">
+    <div class="lglogo">
+      <div class="lgicon">🌊</div>
+      <div class="lgtitle">海洋无人机采样及原位监测智能中控系统</div>
+      <div class="lgsub">TIANYU ENERGY OCEAN CONTROL TEST SYSTEM</div>
+    </div>
+    <div class="lgline"></div>
+    <label class="lglbl">用户名</label>
+    <div class="lgwrap">
+      <span class="lgii">👤</span>
+      <input class="lginput" id="lgUser" type="text" placeholder="请输入用户名"/>
+    </div>
+    <label class="lglbl">密码</label>
+    <div class="lgwrap">
+      <span class="lgii">🔒</span>
+      <input class="lginput" id="lgPass" type="password" placeholder="请输入密码"/>
+    </div>
+    <span class="lgerr" id="lgErr"></span>
+    <button class="lgbtn" onclick="doLogin()">登 录</button>
+    <div class="lgfoot">海洋无人机采样及原位监测智能中控系统 v1.0<br>© 2026 TYEOCS · 内部系统 · 禁止外传</div>
+  </div>
+</div>
+<div id="mainApp" style="display:none">
+<div class="scanline"></div>
+<div id="app">
+
+<header>
+  <div class="header-left">
+    <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+      <circle cx="20" cy="20" r="18" stroke="#00d4ff" stroke-width="1.5" opacity="0.5"/>
+      <circle cx="20" cy="20" r="12" stroke="#00d4ff" stroke-width="1" opacity="0.7"/>
+      <circle cx="20" cy="20" r="4" fill="#00d4ff"/>
+      <line x1="2" y1="20" x2="10" y2="20" stroke="#00d4ff" stroke-width="1.5"/>
+      <line x1="30" y1="20" x2="38" y2="20" stroke="#00d4ff" stroke-width="1.5"/>
+      <line x1="20" y1="2" x2="20" y2="10" stroke="#00d4ff" stroke-width="1.5"/>
+      <line x1="20" y1="30" x2="20" y2="38" stroke="#00d4ff" stroke-width="1.5"/>
+      <line x1="7" y1="7" x2="13" y2="13" stroke="#00d4ff" stroke-width="1" opacity="0.5"/>
+      <line x1="27" y1="27" x2="33" y2="33" stroke="#00d4ff" stroke-width="1" opacity="0.5"/>
+      <line x1="33" y1="7" x2="27" y2="13" stroke="#00d4ff" stroke-width="1" opacity="0.5"/>
+      <line x1="7" y1="33" x2="13" y2="27" stroke="#00d4ff" stroke-width="1" opacity="0.5"/>
+    </svg>
+    <div class="header-title">海洋无人机采样及原位监测智能中控系统<span>TIANYU ENERGY OCEAN CONTROL TEST SYSTEM</span></div>
+  </div>
+  <div class="header-center">
+    <div class="hstatus"><div class="sdot"></div>系统在线</div>
+    <div class="hstatus"><div class="sdot"></div>北斗正常</div>
+    <div class="hstatus warn"><div class="sdot"></div>B3海区预警</div>
+  </div>
+  <div class="header-right">
+    <div><div class="sys-time" id="sysTime">--:--:--</div><div class="sys-date" id="sysDate">----/--/--</div></div>
+    <div style="display:flex;gap:8px">
+      <button class="hbtn" onclick="openModal('registerModal')">+ 注册无人机</button>
+      <button class="hbtn" onclick="openModal('networkModal')">组网配置</button>
+    </div>
+  </div>
+</header>
+
+<div id="alertBanner">
+  <span class="alert-icon">⚠</span>
+  <span>【信号告警】UAV-007 信号强度微弱（-94 dBm），已低于阈值，建议立即检查或召回</span>
+  <button onclick="this.closest('#alertBanner').classList.remove('show')" style="margin-left:auto;background:none;border:none;color:#fff;cursor:pointer;font-size:18px;opacity:0.7;padding:0 4px">×</button>
+</div>
+
+<nav>
+  <button class="tab active" data-view="mapView" onclick="switchView(this)">🗺 态势地图</button>
+  <button class="tab" data-view="topoView" onclick="switchView(this)">🔗 网络拓扑</button>
+  <button class="tab" data-view="monitorView" onclick="switchView(this)">📊 实时监控</button>
+  <button class="tab" data-view="insituView" onclick="switchView(this)">🌊 原位监测</button>
+  <button class="tab" data-view="derunView" onclick="switchView(this)">🧪 水样后处理</button>
+  <button class="tab" data-view="taskView" onclick="switchView(this)">📋 任务调度</button>
+  <button class="tab" data-view="dataView" onclick="switchView(this)">💾 数据中心</button>
+  <button class="tab" data-view="maintView" onclick="switchView(this)">🔧 维护管理</button>
+</nav>
+
+<main>
+  <!-- LEFT -->
+  <div class="left-panel">
+    <div class="panel-hdr"><span class="panel-title">舰队概览</span><span style="font-size:10px;color:var(--dim)">共 14 架</span></div>
+    <div class="fleet-stats">
+      <div class="stat-card sc-a"><div class="stat-num" id="cntA">8</div><div class="stat-label">在飞</div></div>
+      <div class="stat-card sc-i"><div class="stat-num" id="cntI">4</div><div class="stat-label">待命</div></div>
+      <div class="stat-card sc-e"><div class="stat-num" id="cntE">2</div><div class="stat-label">异常</div></div>
+    </div>
+    <div class="panel-hdr" style="border-top:1px solid var(--border)">
+      <span class="panel-title">无人机列表</span>
+      <span style="font-size:10px;color:var(--green);cursor:pointer" onclick="openModal('taskModal')">+ 派发任务</span>
+    </div>
+    <div class="drone-list" id="droneList"></div>
+  </div>
+
+  <!-- CENTER -->
+  <div class="center-panel">
+    <div class="view-content">
+
+      <!-- MAP -->
+      <div id="mapView" class="view active" onclick="handleMapClick(event)">
+        <div class="map-fullscreen-btn" id="mapFullBtn" onclick="toggleMapFullscreen(event)"><span id="mapFullIcon">⛶</span> <span id="mapFullText">全屏查看</span></div>
+        <svg id="mapSvg" viewBox="0 0 900 580" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <filter id="glow"><feGaussianBlur stdDeviation="3" result="cb"/><feMerge><feMergeNode in="cb"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            <filter id="glow2"><feGaussianBlur stdDeviation="6" result="cb"/><feMerge><feMergeNode in="cb"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            <radialGradient id="seaGrad" cx="50%" cy="50%" r="70%">
+              <stop offset="0%" stop-color="#001840" stop-opacity="0.8"/>
+              <stop offset="100%" stop-color="#000c20" stop-opacity="1"/>
+            </radialGradient>
+          </defs>
+          <rect width="900" height="580" fill="url(#seaGrad)"/>
+          <g stroke="rgba(0,212,255,0.07)" stroke-width="0.5">
+            <line x1="150" y1="0" x2="150" y2="580"/><line x1="300" y1="0" x2="300" y2="580"/>
+            <line x1="450" y1="0" x2="450" y2="580"/><line x1="600" y1="0" x2="600" y2="580"/>
+            <line x1="750" y1="0" x2="750" y2="580"/>
+            <line x1="0" y1="100" x2="900" y2="100"/><line x1="0" y1="200" x2="900" y2="200"/>
+            <line x1="0" y1="300" x2="900" y2="300"/><line x1="0" y1="400" x2="900" y2="400"/>
+            <line x1="0" y1="500" x2="900" y2="500"/>
+          </g>
+          <g fill="rgba(0,212,255,0.3)" font-family="Orbitron,monospace" font-size="9">
+            <text x="148" y="12" text-anchor="end">118°E</text><text x="298" y="12" text-anchor="end">120°E</text>
+            <text x="448" y="12" text-anchor="end">122°E</text><text x="598" y="12" text-anchor="end">124°E</text>
+            <text x="748" y="12" text-anchor="end">126°E</text>
+            <text x="4" y="104">26°N</text><text x="4" y="204">24°N</text>
+            <text x="4" y="304">22°N</text><text x="4" y="404">20°N</text>
+            <text x="4" y="504">18°N</text>
+          </g>
+          <!-- Coastline -->
+          <path d="M0,70 L25,85 L55,95 L75,115 L65,145 L45,165 L38,195 L52,215 L78,228 L88,258 L72,278 L55,298 L44,326 L68,356 L98,375 L108,398 L88,418 L55,448 L44,478 L66,508 L98,528 L128,538 L148,558 L170,575 L200,582 L0,582 Z"
+            fill="rgba(20,60,40,0.55)" stroke="rgba(0,255,136,0.35)" stroke-width="1.5"/>
+          <path d="M820,0 L865,22 L885,55 L900,85 L900,0 Z" fill="rgba(20,60,40,0.4)" stroke="rgba(0,255,136,0.2)" stroke-width="1"/>
+          <!-- Islands -->
+          <ellipse cx="672" cy="415" rx="22" ry="13" fill="rgba(20,60,40,0.65)" stroke="rgba(0,255,136,0.35)" stroke-width="1"/>
+          <ellipse cx="745" cy="348" rx="16" ry="10" fill="rgba(20,60,40,0.55)" stroke="rgba(0,255,136,0.28)" stroke-width="1"/>
+          <ellipse cx="815" cy="458" rx="19" ry="11" fill="rgba(20,60,40,0.55)" stroke="rgba(0,255,136,0.28)" stroke-width="1"/>
+          <ellipse cx="614" cy="318" rx="13" ry="8" fill="rgba(20,60,40,0.45)" stroke="rgba(0,255,136,0.22)" stroke-width="1"/>
+          <ellipse cx="530" cy="490" rx="10" ry="6" fill="rgba(20,60,40,0.4)" stroke="rgba(0,255,136,0.2)" stroke-width="1"/>
+          <!-- Zone labels -->
+          <text x="260" y="175" fill="rgba(0,212,255,0.22)" font-family="Noto Sans SC,sans-serif" font-size="18" font-weight="500" text-anchor="middle">东  海</text>
+          <text x="560" y="320" fill="rgba(0,212,255,0.22)" font-family="Noto Sans SC,sans-serif" font-size="18" font-weight="500" text-anchor="middle">南  海</text>
+          <text x="450" y="475" fill="rgba(0,212,255,0.18)" font-family="Noto Sans SC,sans-serif" font-size="13" text-anchor="middle">海区 B3</text>
+          <text x="695" y="195" fill="rgba(0,212,255,0.18)" font-family="Noto Sans SC,sans-serif" font-size="13" text-anchor="middle">海区 A1</text>
+          <text x="720" y="470" fill="rgba(0,212,255,0.16)" font-family="Noto Sans SC,sans-serif" font-size="12" text-anchor="middle">海区 C2</text>
+          <text x="330" y="380" fill="rgba(0,212,255,0.16)" font-family="Noto Sans SC,sans-serif" font-size="12" text-anchor="middle">海区 D4</text>
+          <!-- CMD center -->
+          <g filter="url(#glow2)">
+            <rect x="30" y="225" width="62" height="36" rx="4" fill="rgba(0,212,255,0.12)" stroke="rgba(0,212,255,0.6)" stroke-width="1.5"/>
+            <text x="61" y="238" fill="#00d4ff" font-family="Orbitron,monospace" font-size="8" text-anchor="middle" font-weight="700">指挥中心</text>
+            <text x="61" y="252" fill="#00d4ff" font-family="Orbitron,monospace" font-size="7" text-anchor="middle">CMD-01</text>
+          </g>
+          <g id="meshLinks"></g>
+          <g id="droneNodes"></g>
+        </svg>
+      </div>
+
+      <!-- TOPO -->
+      <div id="topoView" class="view">
+        <svg id="topoSvg" viewBox="0 0 800 540" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <filter id="tg"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            <marker id="arA" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#00d4ff" opacity="0.7"/></marker>
+            <marker id="arB" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#00ff88" opacity="0.6"/></marker>
+          </defs>
+          <rect width="800" height="540" fill="rgba(0,5,20,0.2)"/>
+          <circle cx="400" cy="270" r="105" fill="none" stroke="rgba(0,212,255,0.1)" stroke-width="1" stroke-dasharray="4,4"/>
+          <circle cx="400" cy="270" r="205" fill="none" stroke="rgba(0,212,255,0.07)" stroke-width="1" stroke-dasharray="4,6"/>
+          <!-- Center to relay links -->
+          <g stroke="#00d4ff" stroke-width="1.5" stroke-opacity="0.5" marker-end="url(#arA)" fill="none">
+            <line x1="400" y1="270" x2="296" y2="162"/>
+            <line x1="400" y1="270" x2="504" y2="162"/>
+            <line x1="400" y1="270" x2="274" y2="308"/>
+            <line x1="400" y1="270" x2="526" y2="308"/>
+          </g>
+          <!-- Relay to leaf links -->
+          <g stroke="#00ff88" stroke-width="1" stroke-opacity="0.4" stroke-dasharray="5,3" marker-end="url(#arB)" fill="none">
+            <line x1="296" y1="162" x2="194" y2="84"/>
+            <line x1="296" y1="162" x2="336" y2="74"/>
+            <line x1="296" y1="162" x2="214" y2="234"/>
+            <line x1="504" y1="162" x2="438" y2="74"/>
+            <line x1="504" y1="162" x2="578" y2="84"/>
+            <line x1="504" y1="162" x2="566" y2="234"/>
+            <line x1="274" y1="308" x2="174" y2="375"/>
+            <line x1="274" y1="308" x2="214" y2="418"/>
+            <line x1="526" y1="308" x2="618" y2="375"/>
+            <line x1="526" y1="308" x2="578" y2="418"/>
+          </g>
+          <!-- Center node -->
+          <g filter="url(#tg)">
+            <circle cx="400" cy="270" r="30" fill="rgba(0,212,255,0.15)" stroke="#00d4ff" stroke-width="2"/>
+            <text x="400" y="265" fill="#00d4ff" font-family="Orbitron,monospace" font-size="9" text-anchor="middle" font-weight="700">CMD</text>
+            <text x="400" y="278" fill="#00d4ff" font-family="Orbitron,monospace" font-size="7" text-anchor="middle">指挥中心</text>
+          </g>
+          <!-- Relay nodes -->
+          <g filter="url(#tg)">
+            <circle cx="296" cy="162" r="20" fill="rgba(0,212,255,0.2)" stroke="#00d4ff" stroke-width="1.5"/>
+            <text x="296" y="158" fill="#00d4ff" font-family="Orbitron,monospace" font-size="7" text-anchor="middle">中继</text>
+            <text x="296" y="170" fill="#00d4ff" font-family="Orbitron,monospace" font-size="7" text-anchor="middle">UAV-01</text>
+          </g>
+          <g filter="url(#tg)">
+            <circle cx="504" cy="162" r="20" fill="rgba(0,212,255,0.2)" stroke="#00d4ff" stroke-width="1.5"/>
+            <text x="504" y="158" fill="#00d4ff" font-family="Orbitron,monospace" font-size="7" text-anchor="middle">中继</text>
+            <text x="504" y="170" fill="#00d4ff" font-family="Orbitron,monospace" font-size="7" text-anchor="middle">UAV-05</text>
+          </g>
+          <g filter="url(#tg)">
+            <circle cx="274" cy="308" r="20" fill="rgba(0,212,255,0.2)" stroke="#00d4ff" stroke-width="1.5"/>
+            <text x="274" y="304" fill="#00d4ff" font-family="Orbitron,monospace" font-size="7" text-anchor="middle">中继</text>
+            <text x="274" y="316" fill="#00d4ff" font-family="Orbitron,monospace" font-size="7" text-anchor="middle">UAV-09</text>
+          </g>
+          <g filter="url(#tg)">
+            <circle cx="526" cy="308" r="20" fill="rgba(0,212,255,0.2)" stroke="#00d4ff" stroke-width="1.5"/>
+            <text x="526" y="304" fill="#00d4ff" font-family="Orbitron,monospace" font-size="7" text-anchor="middle">中继</text>
+            <text x="526" y="316" fill="#00d4ff" font-family="Orbitron,monospace" font-size="7" text-anchor="middle">UAV-11</text>
+          </g>
+          <!-- Leaf nodes -->
+          <g font-family="Orbitron,monospace" font-size="7" text-anchor="middle">
+            <circle cx="194" cy="84" r="14" stroke="#00ff88" stroke-width="1.2" fill="rgba(0,255,136,0.1)"/><text x="194" y="80" fill="#00ff88">UAV</text><text x="194" y="91" fill="#00ff88">-02</text>
+            <circle cx="336" cy="74" r="14" stroke="#ff9500" stroke-width="1.2" fill="rgba(255,149,0,0.1)"/><text x="336" y="70" fill="#ff9500">UAV</text><text x="336" y="81" fill="#ff9500">-03</text>
+            <circle cx="214" cy="234" r="14" stroke="#00ff88" stroke-width="1.2" fill="rgba(0,255,136,0.1)"/><text x="214" y="230" fill="#00ff88">UAV</text><text x="214" y="241" fill="#00ff88">-04</text>
+            <circle cx="438" cy="74" r="14" stroke="#00ff88" stroke-width="1.2" fill="rgba(0,255,136,0.1)"/><text x="438" y="70" fill="#00ff88">UAV</text><text x="438" y="81" fill="#00ff88">-06</text>
+            <circle cx="578" cy="84" r="14" stroke="#ff3355" stroke-width="1.2" fill="rgba(255,51,85,0.1)" style="animation:node-blink 0.4s step-end infinite"/><text x="578" y="80" fill="#ff3355">UAV</text><text x="578" y="91" fill="#ff3355">-07</text>
+            <circle cx="566" cy="234" r="14" stroke="#0099cc" stroke-width="1.2" fill="rgba(0,153,204,0.1)"/><text x="566" y="230" fill="#0099cc">UAV</text><text x="566" y="241" fill="#0099cc">-08</text>
+            <circle cx="174" cy="375" r="14" stroke="#ff9500" stroke-width="1.2" fill="rgba(255,149,0,0.1)"/><text x="174" y="371" fill="#ff9500">UAV</text><text x="174" y="382" fill="#ff9500">-10</text>
+            <circle cx="214" cy="418" r="14" stroke="#00ff88" stroke-width="1.2" fill="rgba(0,255,136,0.1)"/><text x="214" y="414" fill="#00ff88">UAV</text><text x="214" y="425" fill="#00ff88">-12</text>
+            <circle cx="618" cy="375" r="14" stroke="#00ff88" stroke-width="1.2" fill="rgba(0,255,136,0.1)"/><text x="618" y="371" fill="#00ff88">UAV</text><text x="618" y="382" fill="#00ff88">-13</text>
+            <circle cx="578" cy="418" r="14" stroke="#ff3355" stroke-width="1.2" fill="rgba(255,51,85,0.1)" style="animation:node-blink 0.4s step-end infinite"/><text x="578" y="414" fill="#ff3355">UAV</text><text x="578" y="425" fill="#ff3355">-14</text>
+          </g>
+          <!-- Legend -->
+          <g transform="translate(626,18)" font-family="Noto Sans SC" font-size="10">
+            <text x="0" y="15" fill="rgba(0,212,255,0.6)">网络拓扑图例</text>
+            <circle cx="8" cy="30" r="8" fill="rgba(0,212,255,0.2)" stroke="#00d4ff" stroke-width="1.5"/>
+            <text x="22" y="34" fill="var(--dim)">指挥/中继节点</text>
+            <circle cx="8" cy="52" r="8" fill="rgba(0,255,136,0.1)" stroke="#00ff88" stroke-width="1.2"/>
+            <text x="22" y="56" fill="var(--dim)">在飞节点</text>
+            <circle cx="8" cy="74" r="8" fill="rgba(255,149,0,0.1)" stroke="#ff9500" stroke-width="1.2"/>
+            <text x="22" y="78" fill="var(--dim)">待命节点</text>
+            <circle cx="8" cy="96" r="8" fill="rgba(0,153,204,0.1)" stroke="#0099cc" stroke-width="1.2"/>
+            <text x="22" y="100" fill="var(--dim)">充电节点</text>
+            <circle cx="8" cy="118" r="8" fill="rgba(255,51,85,0.1)" stroke="#ff3355" stroke-width="1.2"/>
+            <text x="22" y="122" fill="var(--dim)">异常节点</text>
+          </g>
+        </svg>
+      </div>
+
+      <!-- MONITOR -->
+      <div id="monitorView" class="view">
+        <div class="view-hdr">
+          <span class="view-hdr-title">实时监控面板</span>
+          <span class="view-hdr-info">数据刷新间隔: 3s</span>
+        </div>
+        <div class="scrollable">
+          <div class="monitor-stats">
+            <div class="m-stat"><div class="m-stat-val">92.8%</div><div class="m-stat-unit">在线率</div><div class="m-stat-lbl">ONLINE RATE</div></div>
+            <div class="m-stat"><div class="m-stat-val">28<span style="font-size:14px">ms</span></div><div class="m-stat-unit">平均延迟</div><div class="m-stat-lbl">AVG LATENCY</div></div>
+            <div class="m-stat"><div class="m-stat-val" id="mDataVol">2.4<span style="font-size:14px">GB</span></div><div class="m-stat-unit">今日数据量</div><div class="m-stat-lbl">DATA VOLUME</div></div>
+            <div class="m-stat"><div class="m-stat-val">14<span style="font-size:14px">h</span></div><div class="m-stat-unit">系统运行时长</div><div class="m-stat-lbl">UPTIME</div></div>
+          </div>
+          <div class="chart-panel">
+            <div class="chart-title">多通道实时数据 — 最近 60s</div>
+            <canvas id="monitorCanvas" height="180"></canvas>
+            <div class="chart-legend">
+              <div class="legend-item"><div class="ldot" style="background:#00d4ff"></div>信号强度 (dBm)</div>
+              <div class="legend-item"><div class="ldot" style="background:#00ff88"></div>数据速率 (Mbps)</div>
+              <div class="legend-item"><div class="ldot" style="background:#ff9500"></div>平均电量 (%)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- INSITU MONITORING SUBSYSTEM - V4 LEADER DEMO -->
+      <div id="insituView" class="view">
+        <div class="insitu-frame-wrap">
+          <iframe id="insituFrame" class="insitu-frame" src="monitor_platform_dual_video_ready.html?embed=1" title="原位监测子系统" loading="lazy"></iframe>
+          <div class="insitu-actions-float">
+            <button class="insitu-btn" onclick="reloadInsituFrame()">刷新</button>
+            <button class="insitu-btn" onclick="openInsituWindow()">新窗口</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- WATER SAMPLE POST-PROCESSING MODULE -->
+      <div id="derunView" class="view">
+        <div class="derun-frame-wrap">
+          <iframe id="derunFrame" class="derun-frame" src="derun_module.html?embed=1" title="水样后处理模块（德润DR-603K）" loading="lazy"></iframe>
+          <div class="derun-actions-float">
+            <button class="derun-btn" onclick="reloadDerunFrame()">刷新</button>
+            <button class="derun-btn" onclick="openDerunWindow()">新窗口</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TASK -->
+      <div id="taskView" class="view">
+        <div class="view-hdr">
+          <span class="view-hdr-title">任务调度中心</span>
+          <button class="hbtn" style="font-size:10px;padding:4px 10px" onclick="openModal('taskModal')">+ 新建任务</button>
+        </div>
+        <div class="scrollable" id="taskCards"></div>
+      </div>
+
+      <!-- DATA -->
+      <div id="dataView" class="view">
+        <div class="view-hdr">
+          <span class="view-hdr-title">数据中心统计</span>
+          <span class="view-hdr-info" id="lastSync">最后同步: --:--:--</span>
+        </div>
+        <div class="scrollable">
+          <div class="data-grid">
+            <div class="data-card"><div class="data-card-icon">📸</div><div class="data-card-val">47,382</div><div class="data-card-lbl">今日图像采集数</div><div class="data-card-chg">▲ +3.2% 较昨日</div></div>
+            <div class="data-card"><div class="data-card-icon">🌊</div><div class="data-card-val">124,500</div><div class="data-card-lbl">环境传感数据条</div><div class="data-card-chg">▲ +5.8% 较昨日</div></div>
+            <div class="data-card"><div class="data-card-icon">🚢</div><div class="data-card-val">2,847</div><div class="data-card-lbl">AIS 船只识别</div><div class="data-card-chg">▲ +1.4% 较昨日</div></div>
+            <div class="data-card"><div class="data-card-icon">🎬</div><div class="data-card-val" style="font-size:18px">38h 24m</div><div class="data-card-lbl">视频记录总时长</div><div class="data-card-chg">▲ +12% 较昨日</div></div>
+            <div class="data-card"><div class="data-card-icon">💿</div><div class="data-card-val">2.4TB</div><div class="data-card-lbl">已使用存储</div><div class="data-card-chg" style="color:var(--orange)">▲ 62% 容量占用</div></div>
+            <div class="data-card"><div class="data-card-icon">☁</div><div class="data-card-val">99.2%</div><div class="data-card-lbl">云端上传成功率</div><div class="data-card-chg">▲ +0.3% 较昨日</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MAINT -->
+      <div id="maintView" class="view">
+        <div class="view-hdr">
+          <span class="view-hdr-title">维护管理 · 异常记录</span>
+          <span class="view-hdr-info">共 8 条记录</span>
+        </div>
+        <div class="scrollable" id="maintList"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="right-panel">
+    <div class="detail-hdr">
+      <div class="corner c-tl"></div><div class="corner c-tr"></div>
+      <div class="corner c-bl"></div><div class="corner c-br"></div>
+      <div class="detail-id" id="detailId">UAV-001</div>
+      <div class="detail-model" id="detailModel">机型：海翼-III · 指挥节点</div>
+      <div class="sbadges">
+        <span class="sbadge active" id="detailStatus">在飞</span>
+        <span class="sbadge role" id="detailRole">中继节点</span>
+      </div>
+    </div>
+    <div class="metrics-grid">
+      <div class="metric-cell"><div class="metric-val" id="mAlt">320</div><div class="metric-unit">m</div><div class="metric-lbl">高度</div></div>
+      <div class="metric-cell"><div class="metric-val" id="mSpd">42</div><div class="metric-unit">km/h</div><div class="metric-lbl">速度</div></div>
+      <div class="metric-cell"><div class="metric-val" id="mSig">-68</div><div class="metric-unit">dBm</div><div class="metric-lbl">信号</div></div>
+      <div class="metric-cell"><div class="metric-val" id="mRate">12.4</div><div class="metric-unit">Mbps</div><div class="metric-lbl">数据速率</div></div>
+      <div class="metric-cell"><div class="metric-val" id="mTemp">38</div><div class="metric-unit">°C</div><div class="metric-lbl">温度</div></div>
+      <div class="metric-cell"><div class="metric-val" id="mFtime" style="font-size:11px">3h24m</div><div class="metric-unit"></div><div class="metric-lbl">飞行时间</div></div>
+    </div>
+    <div class="bat-sec">
+      <div class="bat-lbl"><span>电量</span><span class="bat-pct" id="batPct" style="color:var(--green)">78%</span></div>
+      <div class="bat-bar"><div class="bat-fill" id="batFill" style="width:78%"></div></div>
+    </div>
+    <div class="task-sec">
+      <div class="sec-title">任务列表</div>
+      <div id="taskMiniList"></div>
+    </div>
+    <div class="action-btns">
+      <button class="abtn ab-p" onclick="doAction('返航')">↩ 返航</button>
+      <button class="abtn ab-s" onclick="doAction('悬停')">⏸ 悬停</button>
+      <button class="abtn ab-w" onclick="openModal('taskModal')">📋 派任务</button>
+      <button class="abtn ab-d" onclick="emergencyRecall()">🚨 紧急召回</button>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="fstatus">
+    <div class="fitem ok"><div class="fdot"></div>主服务器在线</div>
+    <div class="fitem ok"><div class="fdot"></div>北斗/GPS 正常</div>
+    <div class="fitem warn"><div class="fdot"></div>海区B3 风速预警</div>
+    <div class="fitem err"><div class="fdot"></div>UAV-007 信号微弱</div>
+  </div>
+  <div class="fright">
+    <span>v2.6.0-unified</span>
+    <span id="footerSync">同步: --:--:--</span>
+  </div>
+</footer>
+
+</div>
+
+<!-- MODAL: Register -->
+<div class="modal-overlay" id="registerModal">
+  <div class="modal">
+    <div class="modal-hdr"><span class="modal-title">注册新无人机</span><button class="modal-close" onclick="closeModal('registerModal')">×</button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">设备编号</label><input class="form-control" placeholder="UAV-015" type="text"></div>
+        <div class="form-group"><label class="form-label">机型</label><select class="form-control"><option>海翼-III</option><option>海鹰-II</option><option>海燕-I</option><option>海豹-IV</option></select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">通信协议</label><select class="form-control"><option>北斗短报文</option><option>4G LTE</option><option>卫星通信</option><option>WiFi Mesh</option></select></div>
+        <div class="form-group"><label class="form-label">组网角色</label><select class="form-control"><option>普通节点</option><option>中继节点</option><option>指挥节点</option></select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">续航时间 (h)</label><input class="form-control" placeholder="8" type="number"></div>
+        <div class="form-group"><label class="form-label">作业半径 (km)</label><input class="form-control" placeholder="150" type="number"></div>
+      </div>
+      <div class="form-group"><label class="form-label">传感器配置</label>
+        <select class="form-control" multiple style="height:76px"><option selected>可见光摄像头</option><option selected>红外热成像</option><option>AIS接收器</option><option>气象传感器</option><option selected>海面雷达</option></select></div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-c" onclick="closeModal('registerModal')">取消</button>
+      <button class="btn btn-p" onclick="closeModal('registerModal');showToast('UAV-015 注册成功，等待上线','success')">确认注册</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Task -->
+<div class="modal-overlay" id="taskModal">
+  <div class="modal">
+    <div class="modal-hdr"><span class="modal-title">任务派发</span><button class="modal-close" onclick="closeModal('taskModal')">×</button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">任务类型</label><select class="form-control"><option>海面巡逻</option><option>目标跟踪</option><option>图像采集</option><option>环境监测</option><option>应急搜救</option></select></div>
+        <div class="form-group"><label class="form-label">优先级</label><select class="form-control"><option>高优先级</option><option>中优先级</option><option>低优先级</option></select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">目标海区</label><select class="form-control"><option>B3 海区</option><option>A1 海区</option><option>C2 海区</option><option>D4 海区</option></select></div>
+        <div class="form-group"><label class="form-label">指派无人机</label><select class="form-control"><option>UAV-001</option><option>UAV-002</option><option>UAV-003</option><option>UAV-004</option><option>UAV-005</option><option>UAV-006</option></select></div>
+      </div>
+      <div class="form-group"><label class="form-label">任务描述</label><textarea class="form-control" rows="3" placeholder="详细描述任务目标和特殊要求..."></textarea></div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-c" onclick="closeModal('taskModal')">取消</button>
+      <button class="btn btn-p" onclick="closeModal('taskModal');showToast('任务已成功派发','success')">确认派发</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Network Config -->
+<div class="modal-overlay" id="networkModal">
+  <div class="modal">
+    <div class="modal-hdr"><span class="modal-title">组网配置</span><button class="modal-close" onclick="closeModal('networkModal')">×</button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">拓扑类型</label><select class="form-control"><option>星型拓扑</option><option>Mesh 网格</option><option>树型拓扑</option><option>混合拓扑</option></select></div>
+        <div class="form-group"><label class="form-label">通信频段</label><select class="form-control"><option>2.4 GHz</option><option>5.8 GHz</option><option>900 MHz</option><option>卫星 L 波段</option></select></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">加密方式</label><select class="form-control"><option>AES-256</option><option>SM4 国密</option><option>ChaCha20</option></select></div>
+        <div class="form-group"><label class="form-label">跳频间隔 (ms)</label><input class="form-control" type="number" value="50"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">主节点</label><select class="form-control"><option>UAV-001</option><option>UAV-005</option><option>UAV-009</option></select></div>
+        <div class="form-group"><label class="form-label">断链策略</label><select class="form-control"><option>自动返航</option><option>就地悬停</option><option>切换备用链</option><option>继续任务</option></select></div>
+      </div>
+    </div>
+    <div class="modal-ftr">
+      <button class="btn btn-c" onclick="closeModal('networkModal')">取消</button>
+      <button class="btn btn-p" onclick="closeModal('networkModal');showToast('组网配置已保存并下发','success')">保存配置</button>
+    </div>
+  </div>
+</div>
+
+<div id="toastContainer"></div>
+
+<script src="config.js"></script>
+<script>
+const DRONES=[
+  {id:'UAV-001',model:'海翼-III',role:'指挥节点',status:'active',bat:78,signal:-68,alt:320,spd:42,rate:12.4,temp:38,flightTime:'3h24m',zone:'A1',tasks:[{name:'区域巡逻',zone:'A1海区',st:'running'},{name:'图像采集',zone:'A1海区',st:'queued'}]},
+  {id:'UAV-002',model:'海鹰-II',role:'普通节点',status:'active',bat:65,signal:-72,alt:280,spd:38,rate:8.6,temp:41,flightTime:'2h18m',zone:'A1',tasks:[{name:'目标跟踪',zone:'A1海区',st:'running'}]},
+  {id:'UAV-003',model:'海燕-I',role:'普通节点',status:'idle',bat:92,signal:-61,alt:0,spd:0,rate:0,temp:28,flightTime:'0h00m',zone:'基地',tasks:[{name:'定期维护',zone:'基地',st:'done'}]},
+  {id:'UAV-004',model:'海翼-III',role:'普通节点',status:'active',bat:54,signal:-75,alt:350,spd:45,rate:9.2,temp:44,flightTime:'4h02m',zone:'B3',tasks:[{name:'环境监测',zone:'B3海区',st:'running'},{name:'气象采集',zone:'B3海区',st:'queued'}]},
+  {id:'UAV-005',model:'海豹-IV',role:'中继节点',status:'active',bat:81,signal:-65,alt:400,spd:0,rate:15.8,temp:36,flightTime:'5h10m',zone:'A1',tasks:[{name:'信号中继',zone:'全域',st:'running'}]},
+  {id:'UAV-006',model:'海鹰-II',role:'普通节点',status:'active',bat:43,signal:-79,alt:260,spd:36,rate:7.4,temp:46,flightTime:'5h44m',zone:'C2',tasks:[{name:'AIS采集',zone:'C2海区',st:'running'}]},
+  {id:'UAV-007',model:'海燕-I',role:'普通节点',status:'error',bat:22,signal:-94,alt:180,spd:28,rate:1.2,temp:52,flightTime:'6h30m',zone:'B3',tasks:[{name:'应急搜救',zone:'B3海区',st:'running'}]},
+  {id:'UAV-008',model:'海翼-III',role:'普通节点',status:'charging',bat:34,signal:-82,alt:0,spd:0,rate:0,temp:32,flightTime:'0h00m',zone:'基地',tasks:[{name:'充电中',zone:'基地',st:'queued'}]},
+  {id:'UAV-009',model:'海豹-IV',role:'中继节点',status:'active',bat:70,signal:-69,alt:380,spd:0,rate:14.2,temp:37,flightTime:'4h55m',zone:'B3',tasks:[{name:'信号中继',zone:'B3区域',st:'running'}]},
+  {id:'UAV-010',model:'海鹰-II',role:'普通节点',status:'idle',bat:88,signal:-63,alt:0,spd:0,rate:0,temp:30,flightTime:'0h00m',zone:'基地',tasks:[{name:'备勤待命',zone:'基地',st:'done'}]},
+  {id:'UAV-011',model:'海豹-IV',role:'中继节点',status:'active',bat:62,signal:-71,alt:420,spd:0,rate:13.6,temp:39,flightTime:'3h48m',zone:'D4',tasks:[{name:'信号中继',zone:'D4区域',st:'running'}]},
+  {id:'UAV-012',model:'海燕-I',role:'普通节点',status:'active',bat:57,signal:-74,alt:240,spd:34,rate:6.8,temp:43,flightTime:'4h12m',zone:'D4',tasks:[{name:'海面巡逻',zone:'D4海区',st:'running'},{name:'图像回传',zone:'D4海区',st:'queued'}]},
+  {id:'UAV-013',model:'海翼-III',role:'普通节点',status:'idle',bat:96,signal:-60,alt:0,spd:0,rate:0,temp:27,flightTime:'0h00m',zone:'基地',tasks:[{name:'任务待分配',zone:'-',st:'queued'}]},
+  {id:'UAV-014',model:'海燕-I',role:'普通节点',status:'error',bat:15,signal:-96,alt:130,spd:20,rate:0.4,temp:58,flightTime:'7h22m',zone:'C2',tasks:[{name:'异常处置',zone:'C2海区',st:'running'}]}
+];
+
+const MAP_POS=[
+  {x:200,y:228},{x:315,y:138},{x:435,y:175},{x:262,y:368},
+  {x:525,y:218},{x:655,y:298},{x:482,y:438},{x:352,y:475},
+  {x:382,y:328},{x:178,y:428},{x:602,y:378},{x:698,y:448},
+  {x:562,y:148},{x:748,y:278}
+];
+const S_COLOR={active:'#00ff88',idle:'#ff9500',charging:'#0099cc',error:'#ff3355'};
+const S_LABEL={active:'在飞',idle:'待命',charging:'充电中',error:'异常'};
+const S_CLS={active:'active',idle:'idle',charging:'charging',error:'error'};
+
+const TASKS_DATA=[
+  {id:'TSK-2024-0891',name:'B3海区环境监测',type:'环境监测',drone:'UAV-004',zone:'B3海区',priority:'high',progress:68,status:'running',desc:'对B3海区进行全方位气象与水文环境数据采集'},
+  {id:'TSK-2024-0890',name:'A1目标跟踪任务',type:'目标跟踪',drone:'UAV-002',zone:'A1海区',priority:'high',progress:85,status:'running',desc:'对可疑目标实施持续跟踪并实时回传图像'},
+  {id:'TSK-2024-0889',name:'D4定期海面巡逻',type:'海面巡逻',drone:'UAV-012',zone:'D4海区',priority:'med',progress:45,status:'running',desc:'按预定航线执行日常海面巡逻任务'},
+  {id:'TSK-2024-0888',name:'C2海区AIS数据采集',type:'图像采集',drone:'UAV-006',zone:'C2海区',priority:'med',progress:72,status:'running',desc:'采集C2海区过往船只AIS信号数据'},
+  {id:'TSK-2024-0887',name:'B3应急搜救',type:'应急搜救',drone:'UAV-007',zone:'B3海区',priority:'high',progress:30,status:'running',desc:'B3海区报告遇险信号，执行应急搜救任务'},
+  {id:'TSK-2024-0886',name:'A1图像高清采集',type:'图像采集',drone:'UAV-001',zone:'A1海区',priority:'low',progress:0,status:'queued',desc:'排队等待执行A1海区高清图像采集'},
+  {id:'TSK-2024-0885',name:'D4气象专项监测',type:'环境监测',drone:'UAV-013',zone:'D4海区',priority:'med',progress:0,status:'queued',desc:'D4海区台风预报期间专项气象监测'},
+  {id:'TSK-2024-0880',name:'A1全域信号覆盖',type:'海面巡逻',drone:'UAV-005',zone:'A1全域',priority:'low',progress:100,status:'done',desc:'已完成A1海区全域通信信号覆盖任务'}
+];
+
+const MAINT_DATA=[
+  {drone:'UAV-007',desc:'通信模块信号强度持续低于阈值（-94 dBm），超出正常工作范围',level:'critical',st:'处理中'},
+  {drone:'UAV-014',desc:'机载电池组出现单体电压异常，剩余电量仅15%，建议立即召回',level:'critical',st:'待处理'},
+  {drone:'UAV-006',desc:'电量低于45%，预计1.2小时后需返航充电',level:'severe',st:'已通知'},
+  {drone:'UAV-004',desc:'飞行时间超过4小时，进入高温警戒区（44°C），注意散热',level:'warning',st:'监控中'},
+  {drone:'UAV-012',desc:'图传链路出现间歇性丢包（丢包率约3.2%），影响实时图像质量',level:'warning',st:'监控中'},
+  {drone:'UAV-008',desc:'充电模式中，预计2.5小时完成充电',level:'info',st:'充电中'},
+  {drone:'UAV-001',desc:'计划于18:00执行常规固件升级（v2.1.3→v2.1.4）',level:'plan',st:'计划中'},
+  {drone:'UAV-010',desc:'下周一安排传感器校准维护，需离线约30分钟',level:'plan',st:'计划中'}
+];
+
+let selIdx=0;
+const chartData={sig:[],rate:[],bat:[]};
+let appStarted=false;
+function startMainAppOnce(){if(appStarted)return;appStarted=true;init();}
+
+function init(){
+  renderList();renderMap();renderTasks();renderMaint();
+  selectDrone(0);initChart();startClock();startRefresh();
+  setTimeout(()=>document.getElementById('alertBanner').classList.add('show'),4000);
+}
+
+function startClock(){
+  function tick(){
+    const n=new Date();
+    const t=n.getHours().toString().padStart(2,'0')+':'+n.getMinutes().toString().padStart(2,'0')+':'+n.getSeconds().toString().padStart(2,'0');
+    document.getElementById('sysTime').textContent=t;
+    document.getElementById('sysDate').textContent=n.getFullYear()+'/'+(n.getMonth()+1).toString().padStart(2,'0')+'/'+n.getDate().toString().padStart(2,'0');
+    document.getElementById('footerSync').textContent='同步: '+t;
+    const ls=document.getElementById('lastSync');if(ls)ls.textContent='最后同步: '+t;
+  }
+  tick();setInterval(tick,1000);
+}
+
+function renderList(){
+  const el=document.getElementById('droneList');
+  el.innerHTML='';
+  DRONES.forEach((d,i)=>{
+    const bc=d.bat>50?'#00ff88':d.bat>25?'#ff9500':'#ff3355';
+    const sc=d.signal>-80?'#00ff88':d.signal>-90?'#ff9500':'#ff3355';
+    const div=document.createElement('div');
+    div.className='drone-item'+(i===selIdx?' sel':'');
+    div.onclick=()=>selectDrone(i);
+    div.innerHTML=`<div class="ds ${S_CLS[d.status]}"></div>
+      <div class="d-info"><div class="d-id">${d.id}</div><div class="d-role">${d.role} · ${d.zone}</div></div>
+      <div class="d-metrics">
+        <div class="d-bat"><div class="d-bat-fill" style="width:${d.bat}%;background:${bc}"></div></div>
+        <div class="d-sig" style="color:${sc}">${d.bat}%</div>
+      </div>`;
+    el.appendChild(div);
+  });
+}
+
+function renderMap(){
+  const lG=document.getElementById('meshLinks');
+  const nG=document.getElementById('droneNodes');
+  lG.innerHTML='';nG.innerHTML='';
+  const NS='http://www.w3.org/2000/svg';
+  const links=[[0,1],[0,4],[1,2],[2,3],[4,5],[5,6],[6,8],[8,9],[8,10],[10,11],[11,12],[12,13],[3,9],[7,3]];
+  links.forEach(([a,b])=>{
+    if(a>=DRONES.length||b>=DRONES.length)return;
+    const pa=MAP_POS[a],pb=MAP_POS[b];
+    const err=DRONES[a].status==='error'||DRONES[b].status==='error';
+    const ln=document.createElementNS(NS,'line');
+    ln.setAttribute('x1',pa.x);ln.setAttribute('y1',pa.y);ln.setAttribute('x2',pb.x);ln.setAttribute('y2',pb.y);
+    ln.setAttribute('stroke',err?'rgba(255,51,85,0.3)':'rgba(0,212,255,0.22)');
+    ln.setAttribute('stroke-width','1');ln.classList.add('mesh-link');
+    lG.appendChild(ln);
+  });
+  DRONES.forEach((d,i)=>{
+    const p=MAP_POS[i];const color=S_COLOR[d.status];
+    const g=document.createElementNS(NS,'g');
+    g.style.cursor='pointer';
+    g.addEventListener('click',()=>selectDrone(i));
+    if(d.status==='active'){
+      const ring=document.createElementNS(NS,'circle');
+      ring.setAttribute('cx',p.x);ring.setAttribute('cy',p.y);ring.setAttribute('r','10');
+      ring.setAttribute('fill','none');ring.setAttribute('stroke',color);ring.setAttribute('stroke-opacity','0.5');ring.setAttribute('stroke-width','1.5');
+      ring.style.animation=`node-ring ${1.5+Math.random()*0.8}s ease-out ${Math.random()*2}s infinite`;
+      g.appendChild(ring);
+    }
+    const c=document.createElementNS(NS,'circle');
+    c.setAttribute('cx',p.x);c.setAttribute('cy',p.y);c.setAttribute('r','8');
+    c.setAttribute('fill',color+'22');c.setAttribute('stroke',color);c.setAttribute('stroke-width','1.5');
+    if(d.status==='error')c.style.animation='node-blink 0.4s step-end infinite';
+    g.appendChild(c);
+    const dot=document.createElementNS(NS,'circle');
+    dot.setAttribute('cx',p.x);dot.setAttribute('cy',p.y);dot.setAttribute('r','3');dot.setAttribute('fill',color);
+    g.appendChild(dot);
+    const lbl=document.createElementNS(NS,'text');
+    lbl.setAttribute('x',p.x);lbl.setAttribute('y',p.y+20);lbl.setAttribute('fill',color);
+    lbl.setAttribute('font-family','Orbitron,monospace');lbl.setAttribute('font-size','8');
+    lbl.setAttribute('text-anchor','middle');lbl.setAttribute('font-weight','600');
+    lbl.textContent=d.id;
+    g.appendChild(lbl);
+    nG.appendChild(g);
+  });
+}
+
+function selectDrone(i){selIdx=i;renderList();updateDetail();}
+
+function updateDetail(){
+  const d=DRONES[selIdx];
+  document.getElementById('detailId').textContent=d.id;
+  document.getElementById('detailModel').textContent='机型：'+d.model+' · '+d.role;
+  const sb=document.getElementById('detailStatus');
+  sb.className='sbadge '+S_CLS[d.status];sb.textContent=S_LABEL[d.status];
+  document.getElementById('detailRole').textContent=d.role;
+  document.getElementById('mAlt').textContent=d.alt;
+  document.getElementById('mSpd').textContent=d.spd;
+  document.getElementById('mSig').textContent=d.signal;
+  document.getElementById('mRate').textContent=d.rate;
+  document.getElementById('mTemp').textContent=d.temp;
+  document.getElementById('mFtime').textContent=d.flightTime;
+  const b=d.bat;
+  document.getElementById('batPct').textContent=b+'%';
+  document.getElementById('batPct').style.color=b>50?'var(--green)':b>25?'var(--orange)':'var(--red)';
+  const bf=document.getElementById('batFill');
+  bf.style.width=b+'%';
+  bf.className='bat-fill'+(b<=25?' low':b<=50?' med':'');
+  const tl=document.getElementById('taskMiniList');tl.innerHTML='';
+  d.tasks.forEach(t=>{
+    const el=document.createElement('div');
+    el.className='task-mini '+t.st;
+    el.innerHTML=`<div class="tm-info"><div class="tm-name">${t.name}</div><div class="tm-zone">${t.zone}</div></div>
+      <div class="tm-st ${t.st}">${t.st==='running'?'执行中':t.st==='queued'?'排队中':'已完成'}</div>`;
+    tl.appendChild(el);
+  });
+}
+
+function startRefresh(){
+  setInterval(()=>{
+    DRONES.forEach(d=>{
+      if(d.status==='active'){
+        d.alt=Math.max(100,d.alt+Math.round((Math.random()-0.5)*20));
+        d.spd=Math.max(20,Math.min(80,d.spd+Math.round((Math.random()-0.5)*8)));
+        d.bat=Math.max(10,d.bat-(Math.random()<0.3?1:0));
+        d.signal=Math.max(-100,Math.min(-50,d.signal+Math.round((Math.random()-0.5)*4)));
+        d.rate=parseFloat(Math.max(0.5,Math.min(20,d.rate+(Math.random()-0.5)*1.5)).toFixed(1));
+        d.temp=Math.max(25,Math.min(65,d.temp+Math.round((Math.random()-0.5)*2)));
+      }
+    });
+    updateDetail();renderList();updateChart();
+  },3000);
+}
+
+function initChart(){
+  for(let i=0;i<60;i++){
+    chartData.sig.push(-65-Math.random()*20);
+    chartData.rate.push(8+Math.random()*8);
+    chartData.bat.push(60+Math.random()*30);
+  }
+  drawChart();
+}
+
+function updateChart(){
+  const avgBat=DRONES.filter(d=>d.status==='active').reduce((a,d)=>a+d.bat,0)/8;
+  chartData.sig.push(Math.max(-100,Math.min(-50,chartData.sig[chartData.sig.length-1]+(Math.random()-0.5)*5)));
+  chartData.rate.push(Math.max(0.5,Math.min(20,chartData.rate[chartData.rate.length-1]+(Math.random()-0.5)*2)));
+  chartData.bat.push(avgBat);
+  if(chartData.sig.length>60){chartData.sig.shift();chartData.rate.shift();chartData.bat.shift();}
+  drawChart();
+}
+
+function drawChart(){
+  const cv=document.getElementById('monitorCanvas');if(!cv)return;
+  const W=cv.parentElement.clientWidth-32||760;const H=180;
+  cv.width=W;cv.height=H;
+  const ctx=cv.getContext('2d');
+  ctx.fillStyle='rgba(0,10,30,0.6)';ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='rgba(0,212,255,0.07)';ctx.lineWidth=1;
+  for(let y=1;y<4;y++){ctx.beginPath();ctx.moveTo(0,y*(H/4));ctx.lineTo(W,y*(H/4));ctx.stroke();}
+  for(let x=1;x<6;x++){ctx.beginPath();ctx.moveTo(x*(W/6),0);ctx.lineTo(x*(W/6),H);ctx.stroke();}
+  function drawLine(data,color,mn,mx){
+    if(!data||data.length<2)return;
+    ctx.strokeStyle=color;ctx.lineWidth=2;ctx.shadowColor=color;ctx.shadowBlur=5;
+    ctx.beginPath();
+    data.forEach((v,i)=>{
+      const x=(i/(data.length-1))*W;
+      const y=H-Math.max(0,Math.min(H,((v-mn)/(mx-mn))*H*0.78+H*0.11));
+      i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    });
+    ctx.stroke();ctx.shadowBlur=0;
+  }
+  drawLine(chartData.sig,'#00d4ff',-105,-40);
+  drawLine(chartData.rate,'#00ff88',0,22);
+  drawLine(chartData.bat,'#ff9500',0,105);
+}
+
+function renderTasks(){
+  const c=document.getElementById('taskCards');c.innerHTML='';
+  const pL={high:'高优先级',med:'中优先级',low:'低优先级'};
+  TASKS_DATA.forEach(t=>{
+    const d=document.createElement('div');d.className='task-card';
+    d.innerHTML=`<div class="task-hdr"><span class="task-id">${t.id}</span><span class="ptag ${t.priority}">${pL[t.priority]}</span></div>
+      <div style="font-size:13px;color:#fff;margin-bottom:8px;font-weight:500">${t.name}</div>
+      <div class="task-body">
+        <div class="task-field"><label>任务类型</label><span>${t.type}</span></div>
+        <div class="task-field"><label>指派无人机</label><span style="color:var(--primary);font-family:Orbitron,monospace">${t.drone}</span></div>
+        <div class="task-field"><label>目标海区</label><span>${t.zone}</span></div>
+        <div class="task-field"><label>进度</label><span>${t.progress}%</span></div>
+      </div>
+      <div class="tprog"><div class="tprog-fill" style="width:${t.progress}%"></div></div>
+      <div class="task-ftr"><span style="font-size:10px;color:var(--dim)">${t.desc}</span>
+        <span class="tstatus ${t.status}">${t.status==='running'?'执行中':t.status==='queued'?'排队中':'已完成'}</span></div>`;
+    c.appendChild(d);
+  });
+}
+
+function renderMaint(){
+  const c=document.getElementById('maintList');c.innerHTML='';
+  const lL={critical:'危急',severe:'严重',warning:'警告',info:'提示',plan:'计划'};
+  MAINT_DATA.forEach(m=>{
+    const d=document.createElement('div');d.className='maint-item';
+    d.innerHTML=`<div class="maint-drone-id">${m.drone}</div>
+      <div class="maint-desc">${m.desc}</div>
+      <div class="mlevel ${m.level}">${lL[m.level]}</div>
+      <div class="maint-st">${m.st}</div>`;
+    c.appendChild(d);
+  });
+}
+
+function switchView(btn){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(btn.dataset.view).classList.add('active');
+  const mainEl=document.querySelector('main');
+  const isInsitu = btn.dataset.view==='insituView';
+  const isDerun = btn.dataset.view==='derunView';
+  if(mainEl){mainEl.classList.toggle('insitu-expanded',isInsitu);mainEl.classList.toggle('derun-expanded',isDerun)}
+  const alertEl=document.getElementById('alertBanner');
+  if(alertEl)alertEl.classList.toggle('alert-hidden-for-insitu',isInsitu||isDerun);
+  if(btn.dataset.view==='monitorView')setTimeout(drawChart,60);
+}
+
+
+function reloadInsituFrame(){
+  const f=document.getElementById('insituFrame');
+  if(f)f.src=f.src;
+  showToast('原位监测子系统已刷新','success');
+}
+function openInsituWindow(){
+  window.open('monitor_platform_dual_video_ready.html','_blank');
+}
+
+function reloadDerunFrame(){
+  const f=document.getElementById('derunFrame');
+  if(f)f.src=f.src;
+  showToast('水样后处理模块已刷新','success');
+}
+function openDerunWindow(){
+  window.open('derun_module.html','_blank');
+}
+
+function toggleMapFullscreen(event){
+  if(event)event.stopPropagation();
+  const map=document.getElementById('mapView');
+  const icon=document.getElementById('mapFullIcon');
+  const text=document.getElementById('mapFullText');
+  if(!map)return;
+  const on=!map.classList.contains('is-fullscreen');
+  map.classList.toggle('is-fullscreen',on);
+  if(icon)icon.textContent=on?'✕':'⛶';
+  if(text)text.textContent=on?'退出全屏':'全屏查看';
+}
+function handleMapClick(event){}
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    const map=document.getElementById('mapView');
+    if(map&&map.classList.contains('is-fullscreen'))toggleMapFullscreen(e);
+  }
+});
+
+function openModal(id){document.getElementById(id).classList.add('show');}
+function closeModal(id){document.getElementById(id).classList.remove('show');}
+document.querySelectorAll('.modal-overlay').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('show');}));
+
+function doAction(a){
+  const d=DRONES[selIdx];
+  const msgs={返航:`${d.id} 已发出返航指令，预计5分钟后到达基地`,悬停:`${d.id} 已切换悬停模式，当前高度 ${d.alt}m`};
+  showToast(msgs[a]||a+' 指令已发送','success');
+}
+
+function emergencyRecall(){
+  const d=DRONES[selIdx];
+  if(confirm(`确认对 ${d.id} 执行紧急召回？\n此操作将中断所有当前任务并立即返航。`)){
+    showToast(`【紧急召回】${d.id} 紧急召回指令已发出，优先级最高`,'warning');
+  }
+}
+
+function showToast(msg,type){
+  const c=document.getElementById('toastContainer');
+  const el=document.createElement('div');
+  el.className='toast'+(type?' '+type:'');
+  el.textContent=msg;
+  c.appendChild(el);
+  setTimeout(()=>{el.classList.add('out');setTimeout(()=>el.remove(),400);},3500);
+}
+
+/* 主系统在登录成功后启动，避免登录前重复初始化定时器 */
+window.onload=null;
+window.addEventListener('resize',()=>{if(document.getElementById('monitorView').classList.contains('active'))drawChart();});
+
+/* LOGIN JS */
+function completeLogin(user){
+  document.getElementById('loginPage').style.display='none';
+  document.getElementById('mainApp').style.display='block';
+  startMainAppOnce();
+  showToast('欢迎登录，'+user.role+' '+user.username,'success');
+}
+async function doLogin(){
+  const u=document.getElementById('lgUser').value.trim();
+  const p=document.getElementById('lgPass').value;
+  const err=document.getElementById('lgErr');
+  const box=document.getElementById('lgbox');
+  const btn=document.querySelector('.lgbtn');
+  const cfg=window.TY_CONFIG||{};
+  if(cfg.DERUN_DEMO_MODE===true){
+    sessionStorage.setItem('derun.demo','true');
+    completeLogin({username:'demo',role:'演示用户'});
+    return;
+  }
+  if(!u||!p){err.textContent='请输入用户名和密码';return;}
+  const apiUrl=String(cfg.DERUN_API_URL||'').replace(/\/$/,'');
+  if(!apiUrl||!apiUrl.startsWith('https://')){err.textContent='尚未配置中控HTTPS接口';return;}
+  btn.textContent='验证中...';btn.disabled=true;
+  try{
+    const response=await fetch(apiUrl+'/auth/login',{method:'POST',cache:'no-store',headers:{'content-type':'application/json'},body:JSON.stringify({username:u,password:p})});
+    let data={};try{data=await response.json()}catch{}
+    if(!response.ok)throw new Error(({"invalid username or password":'账号或密码错误',"too many login attempts":'登录失败次数过多，请稍后再试',"origin not allowed":'当前中控网址尚未加入服务器允许名单'})[data.error]||data.error||'登录失败');
+    sessionStorage.setItem('derun.apiUrl',apiUrl);sessionStorage.setItem('derun.mn',cfg.DERUN_MN||'');sessionStorage.setItem('derun.session',data.sessionToken);sessionStorage.setItem('derun.user',JSON.stringify(data.user));sessionStorage.setItem('derun.demo','false');
+    completeLogin({username:data.user.username,role:({admin:'系统管理员',operator:'操作员',viewer:'只读用户'})[data.user.role]||data.user.role});
+  }catch(error){
+    err.textContent=error.message;box.classList.remove('shake');void box.offsetWidth;box.classList.add('shake');document.getElementById('lgPass').value='';
+  }finally{btn.textContent='登 录';btn.disabled=false}
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  const lp=document.getElementById('lgPass');
+  const lu=document.getElementById('lgUser');
+  if((window.TY_CONFIG||{}).DERUN_DEMO_MODE===true){
+    document.querySelector('.lgbtn').textContent='进 入 演 示 系 统';
+    document.getElementById('lgErr').textContent='当前为模拟演示模式，不会发送真实设备命令';
+  }
+  if(lp) lp.addEventListener('keydown',e=>{if(e.key==='Enter')doLogin();});
+  if(lu) lu.addEventListener('keydown',e=>{if(e.key==='Enter')lp.focus();});
+});
+</script>
+</div></body>
+</html>

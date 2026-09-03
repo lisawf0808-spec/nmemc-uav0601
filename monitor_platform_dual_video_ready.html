@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>天煜能源 · 原位监测演示舱</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#06111f;--panel:#0b1c32;--panel2:#10263f;--line:#1f4d75;
+  --cyan:#46d9ff;--cyan2:rgba(70,217,255,.16);--white:#eaf7ff;
+  --muted:#83a8c0;--green:#44e28a;--orange:#ffb23f;--red:#ff4d5f;
+}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--white);font-family:"Microsoft YaHei","PingFang SC",Arial,sans-serif}
+body{background:radial-gradient(circle at 20% 10%,rgba(20,80,140,.22),transparent 35%),linear-gradient(180deg,#06111f,#04101d)}
+button{font-family:inherit}
+.app{height:100%;display:flex;flex-direction:column;gap:10px;padding:12px}
+.topbar{height:58px;display:flex;align-items:center;justify-content:space-between;border:1px solid var(--line);background:linear-gradient(180deg,rgba(16,43,72,.95),rgba(8,23,42,.96));padding:0 16px;flex-shrink:0}
+.brand{display:flex;align-items:center;gap:12px;min-width:0}.mark{width:34px;height:34px;border-radius:10px;border:1px solid rgba(70,217,255,.45);display:flex;align-items:center;justify-content:center;color:var(--cyan);font-size:20px;background:rgba(70,217,255,.07)}
+.title{font-size:22px;font-weight:800;letter-spacing:1px}.subtitle{font-size:12px;color:var(--muted);margin-top:2px}.statusbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}.pill{height:34px;display:flex;align-items:center;gap:8px;padding:0 13px;border-radius:4px;border:1px solid rgba(70,217,255,.28);background:rgba(70,217,255,.06);font-size:14px;color:#ccefff;white-space:nowrap}.dot{width:8px;height:8px;border-radius:50%;background:currentColor;box-shadow:0 0 8px currentColor}.pill.ok{color:var(--green);border-color:rgba(68,226,138,.35);background:rgba(68,226,138,.08)}.clock{font-family:Consolas,monospace;font-size:26px;color:var(--cyan);letter-spacing:1px;min-width:108px;text-align:right}
+.content{flex:1;min-height:0;display:grid;grid-template-columns:minmax(580px,1.55fr) minmax(420px,.95fr);gap:10px}.left{display:grid;grid-template-rows:1fr 1fr;gap:10px;min-height:0}.video{position:relative;min-height:0;background:#02070d;border:1px solid var(--line);overflow:hidden;display:flex;align-items:center;justify-content:center}.video::before{content:"";position:absolute;inset:0;background-image:linear-gradient(rgba(70,217,255,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(70,217,255,.04) 1px,transparent 1px);background-size:46px 46px;opacity:.65;pointer-events:none}.vhead{position:absolute;left:14px;top:12px;right:14px;display:flex;justify-content:space-between;align-items:center;z-index:4}.vtitle{font-size:18px;font-weight:800;letter-spacing:.6px}.vtag{font-size:13px;color:var(--muted);background:rgba(0,0,0,.4);border:1px solid rgba(70,217,255,.2);padding:4px 9px}.placeholder{text-align:center;z-index:2;color:var(--muted)}.placeholder .big{font-size:24px;font-weight:800;color:#d9f7ff;margin-bottom:10px}.placeholder .small{font-size:14px;line-height:1.7}.vactions{position:absolute;left:14px;right:14px;bottom:12px;display:flex;gap:10px;z-index:5}.btn{height:38px;border:1px solid rgba(70,217,255,.45);background:rgba(70,217,255,.09);color:var(--cyan);font-size:15px;font-weight:700;border-radius:4px;padding:0 15px;cursor:pointer}.btn:hover{background:rgba(70,217,255,.18)}.btn.primary{background:#0d70a5;color:white;border-color:#36caff}.btn.green{border-color:rgba(68,226,138,.5);color:var(--green);background:rgba(68,226,138,.08)}.btn.ghost{background:rgba(0,0,0,.3);color:#bceeff}.btn.danger{border-color:rgba(255,77,95,.45);color:#ff98a4;background:rgba(255,77,95,.08)}.live-media{position:absolute;inset:0;width:100%;height:100%;border:0;object-fit:cover;z-index:1;background:#000}.video.connected .placeholder{display:none}.video.connected::before{opacity:.16}.vfooter{position:absolute;right:14px;bottom:12px;z-index:6;font-size:13px;color:#bfeaff;background:rgba(0,0,0,.48);padding:6px 10px;border:1px solid rgba(70,217,255,.25)}
+.right{display:flex;flex-direction:column;gap:10px;min-height:0}.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;flex-shrink:0}.sumcard{background:var(--panel);border:1px solid var(--line);padding:12px 12px 10px}.sumlabel{font-size:14px;color:var(--muted);margin-bottom:5px}.sumval{font-family:Consolas,monospace;font-size:32px;line-height:1;color:var(--cyan);font-weight:800}.sumunit{font-size:14px;color:var(--muted);margin-left:3px}.panel{background:rgba(11,28,50,.96);border:1px solid var(--line);min-height:0}.panel-h{height:42px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(31,77,117,.75);padding:0 14px}.panel-title{font-size:18px;font-weight:800;color:#dff8ff}.panel-sub{font-size:13px;color:var(--muted)}.data-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px}.data-card{min-height:82px;background:#07172a;border:1px solid rgba(70,217,255,.16);padding:12px}.data-name{font-size:15px;color:var(--muted);margin-bottom:8px}.data-val{font-family:Consolas,monospace;font-size:34px;line-height:1;font-weight:800;color:#f5fcff}.data-unit{font-size:15px;color:var(--muted);margin-left:4px}.data-card.important .data-val{color:var(--cyan)}.connect-row{display:flex;gap:10px;padding:0 12px 12px}.sample{padding:12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}.layer{background:#07172a;border:1px solid rgba(70,217,255,.16);padding:10px;text-align:center}.lname{font-size:15px;color:var(--muted);margin-bottom:4px}.ldep{font-family:Consolas,monospace;font-size:30px;color:var(--cyan);font-weight:800}.cmd{padding:0 12px 12px}.cmd .btn{width:100%;height:44px;font-size:17px;letter-spacing:3px}.footer{height:64px;display:flex;align-items:center;gap:10px;flex-shrink:0}.step{flex:1;height:52px;background:rgba(11,28,50,.95);border:1px solid rgba(31,77,117,.9);display:flex;align-items:center;justify-content:center;gap:8px;color:#b8d5e8;font-size:16px;font-weight:700}.step.done{border-color:rgba(68,226,138,.35);color:var(--green);background:rgba(68,226,138,.08)}.step.active{border-color:rgba(255,77,95,.65);color:#fff;background:linear-gradient(90deg,rgba(255,77,95,.22),rgba(11,28,50,.95))}.step .num{font-family:Consolas,monospace;font-size:15px;color:inherit}.modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,8,18,.74);z-index:20000}.modal.show{display:flex}.mbox{width:440px;background:#0a2138;border:1px solid rgba(70,217,255,.55);box-shadow:0 20px 80px rgba(0,0,0,.55);padding:22px}.mtitle{font-size:22px;font-weight:800;color:#eafaff;margin-bottom:16px}.mrow{height:58px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(70,217,255,.12);font-size:17px;color:var(--muted)}.mrow strong{font-family:Consolas,monospace;font-size:30px;color:var(--cyan)}.mfoot{display:flex;gap:12px;margin-top:18px}.mfoot .btn{flex:1;height:44px}.hint{font-size:13px;color:#7fa0b8;line-height:1.6;padding:0 12px 12px}body.embedded .app{padding:10px}body.embedded .topbar{height:48px}body.embedded .title{font-size:20px}body.embedded .subtitle{display:none}body.embedded .pill{height:30px;font-size:13px}body.embedded .clock{font-size:24px}body.embedded .content{grid-template-columns:minmax(560px,1.55fr) minmax(390px,.95fr)}body.embedded .footer{height:56px}body.embedded .step{height:46px;font-size:15px}body.embedded .data-card{min-height:74px;padding:10px}body.embedded .data-val{font-size:31px}body.embedded .sumval{font-size:30px}body.embedded .vtitle{font-size:17px}
+@media(max-width:980px){.content{grid-template-columns:1fr}.right{min-height:360px}.footer{display:none}.topbar{height:auto;padding:10px;align-items:flex-start}.statusbar{justify-content:flex-start}.clock{display:none}}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="topbar">
+    <div class="brand"><div class="mark">🌊</div><div><div class="title">无人机原位监测演示舱 v7.6.1</div><div class="subtitle">飞行平台视频 / 水下视频 / 水质数据 / 分层采样</div></div></div>
+    <div class="statusbar">
+      <div class="pill ok"><span class="dot"></span><span id="taskState">监测任务执行中</span></div>
+      <button class="btn ghost" onclick="connectAll()">连接视频与数据</button>
+      <div class="clock" id="clock">--:--:--</div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="left">
+      <section class="video" id="bodyVideo">
+        <div class="vhead"><div class="vtitle">飞行平台视频</div><div class="vtag" id="bodyStatus">待连接</div></div>
+        <div class="placeholder"><div class="big">视频未连接</div><div class="small">点击下方按钮后才访问本机 MediaMTX，避免系统启动时弹出网络权限框。</div></div>
+        <div class="vactions"><button class="btn primary" onclick="connectVideo('body')">连接飞行平台视频</button><button class="btn ghost" onclick="fullscreenBox('bodyVideo')">全屏</button></div>
+      </section>
+      <section class="video" id="uwVideo">
+        <div class="vhead"><div class="vtitle">水下作业视频</div><div class="vtag" id="uwStatus">待连接</div></div>
+        <div class="placeholder"><div class="big">视频未连接</div><div class="small">水下相机已改为 H.264 RTSP。启动器会以直通方式推到 MediaMTX，前端通过 WebRTC 显示，不再依赖树莓派转码。</div></div>
+        <div class="vactions"><button class="btn primary" onclick="connectVideo('uw')">连接水下视频</button><button class="btn ghost" onclick="fullscreenBox('uwVideo')">全屏</button></div>
+      </section>
+    </div>
+
+    <div class="right">
+      <div class="summary">
+        <div class="sumcard"><div class="sumlabel">测站水深</div><span class="sumval" id="depthM">0.0</span><span class="sumunit">m</span></div>
+        <div class="sumcard"><div class="sumlabel">当前下放</div><span class="sumval" id="winchM">0.0</span><span class="sumunit">m</span></div>
+        <div class="sumcard"><div class="sumlabel">数据状态</div><span class="sumval" id="dataState" style="font-size:24px">未连接</span></div>
+      </div>
+      <section class="panel" style="flex:1">
+        <div class="panel-h"><div class="panel-title">实时水质数据</div><div class="panel-sub">只显示关键指标</div></div>
+        <div class="data-grid">
+          <div class="data-card important"><div class="data-name">水温</div><span class="data-val" id="tempC">0.0</span><span class="data-unit">℃</span></div>
+          <div class="data-card important"><div class="data-name">溶解氧 DO</div><span class="data-val" id="doVal">0.00</span><span class="data-unit">mg/L</span></div>
+          <div class="data-card"><div class="data-name">pH</div><span class="data-val" id="phVal">0.00</span></div>
+          <div class="data-card"><div class="data-name">盐度</div><span class="data-val" id="salVal">0.00</span></div>
+          <div class="data-card"><div class="data-name">电导率</div><span class="data-val" id="ecVal">0.000</span><span class="data-unit">mS/cm</span></div>
+          <div class="data-card"><div class="data-name">水压</div><span class="data-val" id="pressVal">1.01</span><span class="data-unit">bar</span></div>
+        </div>
+        <div class="connect-row"><button class="btn green" onclick="startData()">连接传感器数据</button><button class="btn ghost" onclick="stopData()">停止刷新</button></div>
+        <div class="hint">演示建议：先打开页面确认布局，再按需连接视频和传感器。未连接前不会主动访问本机视频端口。</div>
+      </section>
+      <section class="panel">
+        <div class="panel-h"><div class="panel-title">分层采样位</div><div class="panel-sub">自动按水深换算</div></div>
+        <div class="sample">
+          <div class="layer"><div class="lname">表层</div><div><span class="ldep" id="layerS">0.5</span> m</div></div>
+          <div class="layer"><div class="lname">中层</div><div><span class="ldep" id="layerM">0.0</span> m</div></div>
+          <div class="layer"><div class="lname">底层</div><div><span class="ldep" id="layerB">0.0</span> m</div></div>
+        </div>
+        <div class="cmd"><button class="btn primary" onclick="openSampleModal()">下 达 分 层 采 样 指 令</button></div>
+      </section>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="step done"><span class="num">01</span>任务下达</div>
+    <div class="step done"><span class="num">02</span>到达点位</div>
+    <div class="step done"><span class="num">03</span>绞盘下放</div>
+    <div class="step active"><span class="num">04</span>数据采集</div>
+    <div class="step"><span class="num">05</span>采样回收</div>
+    <div class="step"><span class="num">06</span>返航降落</div>
+  </div>
+</div>
+
+<div class="modal" id="sampleModal">
+  <div class="mbox">
+    <div class="mtitle">确认下达分层采样指令</div>
+    <div class="mrow"><span>表层采样深度</span><strong><span id="ms">0.5</span> m</strong></div>
+    <div class="mrow"><span>中层采样深度</span><strong><span id="mm">0.0</span> m</strong></div>
+    <div class="mrow"><span>底层采样深度</span><strong><span id="mb">0.0</span> m</strong></div>
+    <div class="mfoot"><button class="btn primary" onclick="confirmSample()">确认发送</button><button class="btn ghost" onclick="closeSampleModal()">取消</button></div>
+  </div>
+</div>
+<script src="config.js"></script>
+<script>
+const EMBEDDED_MODE = new URLSearchParams(location.search).get('embed') === '1';
+if(EMBEDDED_MODE) document.body.classList.add('embedded');
+const URL_PARAMS = new URLSearchParams(location.search);
+const TY_CFG = window.TY_CONFIG || {};
+const DEVICE_HOST = URL_PARAMS.get('device') || TY_CFG.DEVICE_HOST || '100.120.238.17';
+const BODY_WEBRTC_URL = URL_PARAMS.get('body') || TY_CFG.BODY_WEBRTC_URL || 'http://127.0.0.1:8889/bodycam/';
+const UNDERWATER_VIDEO_MODE = (URL_PARAMS.get('uwmode') || TY_CFG.UNDERWATER_VIDEO_MODE || 'webrtc').toLowerCase();
+const UNDERWATER_WEBRTC_URL = URL_PARAMS.get('uw') || TY_CFG.UNDERWATER_WEBRTC_URL || TY_CFG.UNDERWATER_VIDEO_URL || 'http://127.0.0.1:8889/uwcam/';
+const UNDERWATER_MJPEG_URL = TY_CFG.UNDERWATER_MJPEG_URL || `http://${DEVICE_HOST}:8080/stream`; // 仅作旧链路备用
+const UNDERWATER_VIDEO_URL = UNDERWATER_VIDEO_MODE === 'mjpeg' ? UNDERWATER_MJPEG_URL : UNDERWATER_WEBRTC_URL;
+const WATER_API_URL = URL_PARAMS.get('api') || TY_CFG.WATER_API_URL || `http://${DEVICE_HOST}:5050/api/water`;
+const WATER_REFRESH_MS = Number(TY_CFG.WATER_REFRESH_MS || 1000);
+const VIDEO={
+  body:{box:'bodyVideo',status:'bodyStatus',type:'iframe',url:BODY_WEBRTC_URL,label:'飞行平台视频 WebRTC 已连接'},
+  uw:{box:'uwVideo',status:'uwStatus',type:UNDERWATER_VIDEO_MODE === 'mjpeg' ? 'img' : 'iframe',url:UNDERWATER_VIDEO_URL,label:UNDERWATER_VIDEO_MODE === 'mjpeg' ? '水下视频 MJPEG 已连接' : '水下视频 H.264/WebRTC 已连接'}
+};
+let waterTimer=null,lastDepth=0;
+function $(id){return document.getElementById(id)}
+function clock(){const n=new Date();$('clock').textContent=[n.getHours(),n.getMinutes(),n.getSeconds()].map(x=>String(x).padStart(2,'0')).join(':')}
+clock();setInterval(clock,1000);
+function valid(v){return typeof v==='number'&&Number.isFinite(v)}
+function fmt(v,d,fb='0'){return valid(v)?Number(v).toFixed(d):fb}
+function connectVideo(k){
+  const cfg=VIDEO[k],box=$(cfg.box); if(!box)return;
+  if(!box.classList.contains('connected')){
+    const media=document.createElement(cfg.type==='iframe'?'iframe':'img');
+    media.className='live-media'; media.src=cfg.url;
+    if(cfg.type==='iframe'){media.allow='autoplay; fullscreen; camera; microphone'; media.loading='eager'} else {media.alt=cfg.label}
+    box.prepend(media); box.classList.add('connected'); $(cfg.status).textContent='已连接';
+    const foot=document.createElement('div'); foot.className='vfooter'; foot.textContent=cfg.label; box.appendChild(foot);
+  }
+  // 水下视频连上时，同步启动传感器刷新，避免只显示视频、不显示数据。
+  if(k==='uw') startData();
+}
+function connectAll(){connectVideo('body');connectVideo('uw');startData()}
+function normalize(data){const w=data?.water||{}, depth=data?.depth||{}, ec=w.ec_sensor||{}, dos=w.do_sensor||{}, ph=w.ph_sensor||{};return {depth_m:depth.depth_m,temp_c:ec.temp_c,salinity_ppt:ec.salinity_ppt,do_mg_l:dos.do_mg_l,ph:ph.ph,ec_ms_cm:ec.ec_ms_cm}}
+async function fetchWater(){
+  try{const r=await fetch(WATER_API_URL,{cache:'no-store'}); if(!r.ok)throw new Error('HTTP '+r.status); const data=await r.json(); applyWater(normalize(data)); $('dataState').textContent='在线'; $('dataState').style.color='var(--green)'}
+  catch(e){console.error('WATER_API fetch failed:', WATER_API_URL, e); $('dataState').textContent='离线'; $('dataState').style.color='var(--orange)'}
+}
+function startData(){if(waterTimer)return; $('dataState').textContent='连接中'; fetchWater(); waterTimer=setInterval(fetchWater,WATER_REFRESH_MS)}
+function stopData(){if(waterTimer){clearInterval(waterTimer);waterTimer=null}$('dataState').textContent='已停止';$('dataState').style.color='var(--muted)'}
+function applyWater(v){
+  const d=valid(v.depth_m)?v.depth_m:0; lastDepth=d;
+  $('depthM').textContent=fmt(d,1,'0.0'); $('winchM').textContent=fmt(d,1,'0.0');
+  $('tempC').textContent=fmt(v.temp_c,1,'0.0'); $('doVal').textContent=fmt(v.do_mg_l,2,'0.00'); $('phVal').textContent=fmt(v.ph,2,'0.00'); $('salVal').textContent=fmt(v.salinity_ppt,2,'0.00'); $('ecVal').textContent=fmt(v.ec_ms_cm,3,'0.000');
+  const press=valid(d)?d*.0981+1.013:1.013; $('pressVal').textContent=fmt(press,2,'1.01'); updateLayers(d);
+}
+function updateLayers(d){const s=d>=.5?.5:Math.max(0,d), m=d>0?d/2:0, b=d>2?d-2:0; $('layerS').textContent=fmt(s,1,'0.0'); $('layerM').textContent=fmt(m,1,'0.0'); $('layerB').textContent=fmt(b,1,'0.0')}
+updateLayers(0);
+function fullscreenBox(id){const el=$(id); if(el?.requestFullscreen)el.requestFullscreen();}
+function openSampleModal(){ $('ms').textContent=$('layerS').textContent; $('mm').textContent=$('layerM').textContent; $('mb').textContent=$('layerB').textContent; $('sampleModal').classList.add('show')}
+function closeSampleModal(){ $('sampleModal').classList.remove('show')}
+function confirmSample(){closeSampleModal(); $('taskState').textContent='采样指令已下达'}
+$('sampleModal').addEventListener('click',e=>{if(e.target.id==='sampleModal')closeSampleModal()});
+// v7.6.1：进入原位监测页后自动启动传感器数据刷新。
+setTimeout(startData, 600);
+</script>
+</body>
+</html>

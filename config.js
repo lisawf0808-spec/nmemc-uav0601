@@ -1,0 +1,11 @@
+window.TY_CONFIG = Object.assign({
+  DEVICE_HOST: '100.120.238.17',
+  BODY_WEBRTC_URL: 'http://127.0.0.1:8889/bodycam/',
+  UNDERWATER_VIDEO_MODE: 'webrtc',
+  UNDERWATER_WEBRTC_URL: 'http://127.0.0.1:8889/uwcam/',
+  WATER_API_URL: 'http://100.120.238.17:5050/api/water',
+  WATER_REFRESH_MS: 1000,
+  DERUN_API_URL: 'https://39.96.84.255',
+  DERUN_MN: 'TYDR603K0000000000000001',
+  DERUN_DEMO_MODE: false
+}, window.TY_CONFIG || {});
