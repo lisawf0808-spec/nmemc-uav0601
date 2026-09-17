@@ -371,7 +371,7 @@ main.derun-expanded .center-panel{width:100%;flex:1 1 auto}
 #insituView{background:#06111f}
 .alert-hidden-for-insitu{display:none!important}
 
-/* ===== 水样后处理模块嵌入 ===== */
+/* ===== 水样预处理模块嵌入 ===== */
 #derunView{background:#06111f}
 .derun-frame-wrap{height:100%;flex:1;min-height:0;position:relative;background:#06111f;overflow:hidden}
 .derun-frame{width:100%;height:100%;border:0;background:#06111f;display:block}
@@ -496,6 +496,37 @@ footer{height:34px!important;min-height:34px!important;background:rgba(6,17,31,.
 /* 原位监测嵌入页保持全屏，但与 V6 外框一致 */
 main.insitu-expanded .center-panel{background:#06111f!important}.insitu-actions-float .insitu-btn{font-size:13px!important;border-radius:8px!important;background:rgba(11,28,50,.86)!important;border-color:rgba(70,217,255,.35)!important;color:var(--primary)!important}
 
+
+/* Ocean monitoring visual theme · 20260917 */
+:root{--bg:#061b31!important;--panel:#0a294b!important;--panel2:#103965!important;--line:#22719c!important;--border:rgba(32,196,243,.38)!important;--border-strong:#26caf0!important;--cyan:#32e0fa!important;--primary:#32e0fa!important;--blue:#148dec!important;--white:#f0faff!important;--text:#eaf6ff!important;--dim:#9ec3dd!important;--muted:#9ec3dd!important;--green:#39e3b7!important;--orange:#ffbd3c!important;--red:#ff6678!important;--shadow:inset 0 1px 0 rgba(68,204,255,.1),0 8px 22px rgba(0,10,28,.22)}
+html,body{background:#061b31!important;color:#eaf6ff!important;font-family:'Microsoft YaHei','PingFang SC',Arial,sans-serif!important}
+body{background:radial-gradient(ellipse at 45% 0%,rgba(0,111,196,.22),transparent 60%),#061b31!important}
+button,input,select{font-family:inherit}
+button:focus-visible,a:focus-visible{outline:2px solid #ffe09a;outline-offset:3px}
+
+#app,main,.center-panel{background:#061b31!important}
+body::before{opacity:.22!important;background-size:64px 64px!important}
+header{height:76px!important;min-height:76px!important;padding:0 20px!important;position:relative;background:radial-gradient(ellipse at 40% 0%,rgba(19,172,255,.52),transparent 62%),linear-gradient(110deg,#064176,#075caa 48%,#062c58)!important;border-bottom:2px solid #24d7f4!important;box-shadow:0 4px 22px rgba(0,124,229,.24)!important}
+header::after{content:'';position:absolute;bottom:-2px;left:29%;width:42%;height:4px;background:#40e4ff;clip-path:polygon(0 0,100% 0,96% 100%,4% 100%);pointer-events:none}
+.header-left{gap:12px!important;min-width:0}.header-title{font-size:clamp(16px,1.35vw,23px)!important;letter-spacing:1px!important;text-shadow:0 2px 8px #00336a}.header-title span{font-size:9px!important;letter-spacing:2px!important;color:#b4e9ff!important}
+.header-center{gap:8px!important}.hstatus{padding:0 10px!important;height:32px!important;font-size:12px!important;background:rgba(3,37,63,.68)!important;border-radius:4px!important}.header-right{gap:10px!important}.sys-time{font-size:21px!important}.sys-date{color:#c0dced!important}.hbtn{height:34px!important;padding:0 11px!important;white-space:nowrap}
+nav{height:56px!important;min-height:56px!important;padding:7px 14px!important;gap:9px!important;background:linear-gradient(180deg,#083961,#061f3b)!important;border-bottom:1px solid #1f90c3!important;overflow-x:auto}
+.tab{flex:0 0 auto;padding:0 17px!important;font-size:14px!important;color:#d4efff!important;background:linear-gradient(180deg,#177fb9,#094574 60%,#083353)!important;border:1px solid #30b8e7!important;border-radius:3px!important;box-shadow:inset 0 1px 6px rgba(115,232,255,.22)!important;transform:skewX(-5deg)}
+.tab.active{background:linear-gradient(180deg,#ffd36b,#e89b08 48%,#a76200)!important;border-color:#ffdc78!important;color:#fff!important;text-shadow:0 1px 3px #9c5e00;box-shadow:inset 0 1px 4px #ffe7a0,0 0 10px rgba(255,186,29,.2)!important}.tab::after{display:none!important}.tab:hover:not(.active){background:linear-gradient(180deg,#229dd6,#0c518a)!important}
+.left-panel,.right-panel{background:linear-gradient(180deg,#08243e,#0b315b)!important;border-color:#238fba!important}
+.panel-hdr,.chart-title,.sec-title,.modal-hdr{background:linear-gradient(100deg,#087dd0,#104b89 52%,#09233e)!important;border-bottom:1px solid #24bedf!important;color:#f2fbff!important}
+.panel-hdr,.modal-hdr{border-left:3px solid #35e0f5!important}.panel-title,.sec-title{color:#edfbff!important;letter-spacing:.5px!important}.sec-title{padding:8px 10px}.chart-title{padding:8px 11px;margin:-4px -4px 15px;border-left:3px solid #35e0f5}
+.stat-card,.metric-cell,.task-mini,.m-stat,.chart-panel,.task-card,.data-card,.maint-item{background:linear-gradient(140deg,rgba(12,57,99,.96),rgba(7,30,54,.98))!important;border-color:rgba(35,188,229,.44)!important;border-radius:3px!important;box-shadow:var(--shadow)!important}
+.drone-item{background:rgba(11,56,96,.68)!important;border-radius:3px!important}.drone-item.sel{background:linear-gradient(90deg,#0c5e99,#0b3155)!important;border-color:#22d4f3!important}.drone-item:hover{background:#104b79!important}
+#mapView,#topoView{background:#061b31!important}#mapSvg,#topoSvg{background:#082945!important;border-radius:3px!important;border-color:#219bc3!important}
+.hbtn,.derun-btn,.insitu-btn,.btn:not(.btn-danger),.abtn:not(.danger){background:linear-gradient(180deg,#1166a0,#0a365e)!important;border-radius:4px!important;border-color:#2ca7d7!important;color:#e4f8ff!important}
+footer{background:#06284a!important;border-top:1px solid #21a4ce!important}.fitem{color:#afd1e7!important}
+#loginPage{background:radial-gradient(ellipse at 50% 15%,#0b639f 0%,#082e53 45%,#041629 100%)!important}.lgbox{background:linear-gradient(155deg,rgba(12,62,107,.97),rgba(5,29,54,.99))!important;border-radius:5px!important;border-color:#29c4ed!important}.lgbtn{background:linear-gradient(180deg,#1ab0e6,#076cb7)!important;border:1px solid #52d9ff!important}.lgicon{background:linear-gradient(145deg,#0876b8,#0a3157)!important}
+.modal{background:#0b2f52!important;border-radius:5px!important}.form-control,.lginput{background:#072641!important;border-color:#2876a1!important}.toast{background:#0b345b!important}
+#derunView,.derun-frame-wrap,.derun-frame,#insituView,.insitu-frame-wrap,.insitu-frame{background:#061b31!important}
+@media(max-width:1450px){header{padding:0 14px!important}.header-left svg{width:36px!important;height:36px!important}.header-title{font-size:17px!important}.header-center{gap:6px!important}.hstatus{padding:0 8px!important;font-size:11px!important}.sys-time{font-size:19px!important}.hbtn{font-size:12px!important;padding:0 9px!important}.tab{padding:0 14px!important;font-size:13px!important}}
+@media(max-width:1100px){.header-center{display:none!important}.header-title{font-size:16px!important}.header-title span{letter-spacing:1px!important}}
+
 </style>
 </head>
 <body>
@@ -569,7 +600,7 @@ main.insitu-expanded .center-panel{background:#06111f!important}.insitu-actions-
   <button class="tab" data-view="topoView" onclick="switchView(this)">🔗 网络拓扑</button>
   <button class="tab" data-view="monitorView" onclick="switchView(this)">📊 实时监控</button>
   <button class="tab" data-view="insituView" onclick="switchView(this)">🌊 原位监测</button>
-  <button class="tab" data-view="derunView" onclick="switchView(this)">🧪 水样后处理</button>
+  <button class="tab" data-view="derunView" onclick="switchView(this)">🧪 水样预处理</button>
   <button class="tab" data-view="taskView" onclick="switchView(this)">📋 任务调度</button>
   <button class="tab" data-view="dataView" onclick="switchView(this)">💾 数据中心</button>
   <button class="tab" data-view="maintView" onclick="switchView(this)">🔧 维护管理</button>
@@ -767,7 +798,7 @@ main.insitu-expanded .center-panel{background:#06111f!important}.insitu-actions-
       <!-- INSITU MONITORING SUBSYSTEM - V4 LEADER DEMO -->
       <div id="insituView" class="view">
         <div class="insitu-frame-wrap">
-          <iframe id="insituFrame" class="insitu-frame" src="monitor_platform_dual_video_ready.html?embed=1" title="原位监测子系统" loading="lazy"></iframe>
+          <iframe id="insituFrame" class="insitu-frame" src="monitor_platform_dual_video_ready.html?embed=1&amp;ui=20260917theme1" title="原位监测子系统" loading="lazy"></iframe>
           <div class="insitu-actions-float">
             <button class="insitu-btn" onclick="reloadInsituFrame()">刷新</button>
             <button class="insitu-btn" onclick="openInsituWindow()">新窗口</button>
@@ -778,7 +809,7 @@ main.insitu-expanded .center-panel{background:#06111f!important}.insitu-actions-
       <!-- WATER SAMPLE POST-PROCESSING MODULE -->
       <div id="derunView" class="view">
         <div class="derun-frame-wrap">
-          <iframe id="derunFrame" class="derun-frame" src="derun_module.html?embed=1&amp;ui=20260917a" title="水样后处理模块（德润DR-603K）" loading="lazy" allow="autoplay; fullscreen" allowfullscreen></iframe>
+          <iframe id="derunFrame" class="derun-frame" src="derun_module.html?embed=1&amp;ui=20260917theme1" title="水样预处理模块" loading="lazy" allow="autoplay; fullscreen" allowfullscreen></iframe>
           <div class="derun-actions-float">
             <button class="derun-btn" onclick="reloadDerunFrame()">刷新</button>
             <button class="derun-btn" onclick="openDerunWindow()">新窗口</button>
@@ -1236,16 +1267,16 @@ function reloadInsituFrame(){
   showToast('原位监测子系统已刷新','success');
 }
 function openInsituWindow(){
-  window.open('monitor_platform_dual_video_ready.html','_blank');
+  window.open('monitor_platform_dual_video_ready.html?ui=20260917theme1','_blank');
 }
 
 function reloadDerunFrame(){
   const f=document.getElementById('derunFrame');
   if(f)f.src=f.src;
-  showToast('水样后处理模块已刷新','success');
+  showToast('水样预处理模块已刷新','success');
 }
 function openDerunWindow(){
-  window.open('derun_module.html','_blank');
+  window.open('derun_module.html?ui=20260917theme1','_blank');
 }
 
 function toggleMapFullscreen(event){
