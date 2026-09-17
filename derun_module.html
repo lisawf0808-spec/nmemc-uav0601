@@ -23,6 +23,11 @@ button,input,select{font:inherit}button{cursor:pointer}[hidden]{display:none!imp
 body.embedded .app{padding:9px}.busy .actions .btn{pointer-events:none;opacity:.48}
 @media(max-width:1120px){.layout{grid-template-columns:1fr}.right-stack{grid-template-rows:auto auto}.summary{grid-template-columns:1fr 1fr}.video-grid{grid-template-columns:1fr 1fr}.video-card:last-child{grid-column:1/-1}}
 @media(max-width:680px){.app{padding:7px}.top{align-items:flex-start;flex-direction:column}.top-actions{justify-content:flex-start}.summary,.video-grid,.form-grid,.actions{grid-template-columns:1fr}.video-card:last-child,.field.full{grid-column:auto}.title{font-size:18px}}
+
+/* Keep metadata overlays away from native audio/fullscreen controls. */
+.video-head,.video-status,.video-foot{pointer-events:none}
+.video-foot{bottom:56px}
+.video-foot .video-retry{pointer-events:auto}
 </style>
 </head>
 <body>
