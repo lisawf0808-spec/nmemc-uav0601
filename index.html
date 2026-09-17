@@ -528,6 +528,27 @@ footer{background:#06284a!important;border-top:1px solid #21a4ce!important}.fite
 @media(max-width:1100px){.header-center{display:none!important}.header-title{font-size:16px!important}.header-title span{letter-spacing:1px!important}}
 
 </style>
+
+<style id="tianditu-integration-theme">
+#mapView{padding:10px!important;overflow:hidden!important}
+#mapView.active{display:flex!important;flex-direction:column;gap:8px}
+.tdt-toolbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;flex-shrink:0}
+.tdt-toolbar button,.tdt-toolbar select,#tdtMessage button,#tdtSettings button{background:#0c416a;border:1px solid #269bc5;border-radius:4px;padding:8px 10px;color:#d8f5ff;font:inherit;font-size:13px;cursor:pointer;min-height:36px}
+.tdt-toolbar button:hover,#tdtSettings button:hover{background:#0969a5}
+.tdt-canvas-wrap{position:relative;flex:1;min-height:0;border:1px solid #219bc3;border-radius:3px;overflow:hidden;background:#082945;isolation:isolate}
+#tiandituMap{position:absolute;inset:0;background:#082945;color:#18232e;font-family:Arial,sans-serif;z-index:0}
+#tiandituMap img{max-width:none!important}
+.tdt-info{display:flex;flex-wrap:wrap;gap:4px 14px;justify-content:space-between;font-size:11px;color:#a6cbe0;flex-shrink:0}
+#tdtMessage{position:absolute;inset:0;z-index:1100;display:flex;align-content:center;align-items:center;justify-content:center;flex-wrap:wrap;gap:10px;padding:24px;background:#082945;text-align:center}
+#tdtMessage p{flex-basis:100%;line-height:1.8;color:#d8f5ff}
+#tdtMessage[hidden],#tdtSettings[hidden]{display:none!important}
+#tdtSettings{position:absolute;inset:0;z-index:2000;background:rgba(0,10,25,.84);display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto}
+.tdt-settings-card{max-width:440px;width:100%;max-height:100%;overflow:auto;padding:22px;background:#0a2d4d;border:1px solid #36bbdf;border-radius:6px;color:#dbf5ff;box-shadow:0 12px 36px #0006}
+.tdt-settings-card h3{margin:0 0 18px;font-size:19px}.tdt-settings-card label{display:block;font-size:14px;margin-bottom:8px}
+#tdtKey{box-sizing:border-box;width:100%;padding:10px;background:#061b31;color:#fff;border:1px solid #2788b4;border-radius:4px;font:14px monospace}
+.tdt-settings-card p{font-size:13px;line-height:1.7;margin:12px 0}.tdt-settings-card a{color:#59e5ff}
+#tdtSettingsError{color:#ffbb70}.tdt-settings-actions{display:flex;justify-content:flex-end;gap:10px}
+</style>
 </head>
 <body>
 <div id="loginPage">
@@ -626,61 +647,37 @@ footer{background:#06284a!important;border-top:1px solid #21a4ce!important}.fite
   <div class="center-panel">
     <div class="view-content">
 
-      <!-- MAP -->
-      <div id="mapView" class="view active" onclick="handleMapClick(event)">
-        <div class="map-fullscreen-btn" id="mapFullBtn" onclick="toggleMapFullscreen(event)"><span id="mapFullIcon">⛶</span> <span id="mapFullText">全屏查看</span></div>
-        <svg id="mapSvg" viewBox="0 0 900 580" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <filter id="glow"><feGaussianBlur stdDeviation="3" result="cb"/><feMerge><feMergeNode in="cb"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-            <filter id="glow2"><feGaussianBlur stdDeviation="6" result="cb"/><feMerge><feMergeNode in="cb"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-            <radialGradient id="seaGrad" cx="50%" cy="50%" r="70%">
-              <stop offset="0%" stop-color="#001840" stop-opacity="0.8"/>
-              <stop offset="100%" stop-color="#000c20" stop-opacity="1"/>
-            </radialGradient>
-          </defs>
-          <rect width="900" height="580" fill="url(#seaGrad)"/>
-          <g stroke="rgba(0,212,255,0.07)" stroke-width="0.5">
-            <line x1="150" y1="0" x2="150" y2="580"/><line x1="300" y1="0" x2="300" y2="580"/>
-            <line x1="450" y1="0" x2="450" y2="580"/><line x1="600" y1="0" x2="600" y2="580"/>
-            <line x1="750" y1="0" x2="750" y2="580"/>
-            <line x1="0" y1="100" x2="900" y2="100"/><line x1="0" y1="200" x2="900" y2="200"/>
-            <line x1="0" y1="300" x2="900" y2="300"/><line x1="0" y1="400" x2="900" y2="400"/>
-            <line x1="0" y1="500" x2="900" y2="500"/>
-          </g>
-          <g fill="rgba(0,212,255,0.3)" font-family="Orbitron,monospace" font-size="9">
-            <text x="148" y="12" text-anchor="end">118°E</text><text x="298" y="12" text-anchor="end">120°E</text>
-            <text x="448" y="12" text-anchor="end">122°E</text><text x="598" y="12" text-anchor="end">124°E</text>
-            <text x="748" y="12" text-anchor="end">126°E</text>
-            <text x="4" y="104">26°N</text><text x="4" y="204">24°N</text>
-            <text x="4" y="304">22°N</text><text x="4" y="404">20°N</text>
-            <text x="4" y="504">18°N</text>
-          </g>
-          <!-- Coastline -->
-          <path d="M0,70 L25,85 L55,95 L75,115 L65,145 L45,165 L38,195 L52,215 L78,228 L88,258 L72,278 L55,298 L44,326 L68,356 L98,375 L108,398 L88,418 L55,448 L44,478 L66,508 L98,528 L128,538 L148,558 L170,575 L200,582 L0,582 Z"
-            fill="rgba(20,60,40,0.55)" stroke="rgba(0,255,136,0.35)" stroke-width="1.5"/>
-          <path d="M820,0 L865,22 L885,55 L900,85 L900,0 Z" fill="rgba(20,60,40,0.4)" stroke="rgba(0,255,136,0.2)" stroke-width="1"/>
-          <!-- Islands -->
-          <ellipse cx="672" cy="415" rx="22" ry="13" fill="rgba(20,60,40,0.65)" stroke="rgba(0,255,136,0.35)" stroke-width="1"/>
-          <ellipse cx="745" cy="348" rx="16" ry="10" fill="rgba(20,60,40,0.55)" stroke="rgba(0,255,136,0.28)" stroke-width="1"/>
-          <ellipse cx="815" cy="458" rx="19" ry="11" fill="rgba(20,60,40,0.55)" stroke="rgba(0,255,136,0.28)" stroke-width="1"/>
-          <ellipse cx="614" cy="318" rx="13" ry="8" fill="rgba(20,60,40,0.45)" stroke="rgba(0,255,136,0.22)" stroke-width="1"/>
-          <ellipse cx="530" cy="490" rx="10" ry="6" fill="rgba(20,60,40,0.4)" stroke="rgba(0,255,136,0.2)" stroke-width="1"/>
-          <!-- Zone labels -->
-          <text x="260" y="175" fill="rgba(0,212,255,0.22)" font-family="Noto Sans SC,sans-serif" font-size="18" font-weight="500" text-anchor="middle">东  海</text>
-          <text x="560" y="320" fill="rgba(0,212,255,0.22)" font-family="Noto Sans SC,sans-serif" font-size="18" font-weight="500" text-anchor="middle">南  海</text>
-          <text x="450" y="475" fill="rgba(0,212,255,0.18)" font-family="Noto Sans SC,sans-serif" font-size="13" text-anchor="middle">海区 B3</text>
-          <text x="695" y="195" fill="rgba(0,212,255,0.18)" font-family="Noto Sans SC,sans-serif" font-size="13" text-anchor="middle">海区 A1</text>
-          <text x="720" y="470" fill="rgba(0,212,255,0.16)" font-family="Noto Sans SC,sans-serif" font-size="12" text-anchor="middle">海区 C2</text>
-          <text x="330" y="380" fill="rgba(0,212,255,0.16)" font-family="Noto Sans SC,sans-serif" font-size="12" text-anchor="middle">海区 D4</text>
-          <!-- CMD center -->
-          <g filter="url(#glow2)">
-            <rect x="30" y="225" width="62" height="36" rx="4" fill="rgba(0,212,255,0.12)" stroke="rgba(0,212,255,0.6)" stroke-width="1.5"/>
-            <text x="61" y="238" fill="#00d4ff" font-family="Orbitron,monospace" font-size="8" text-anchor="middle" font-weight="700">指挥中心</text>
-            <text x="61" y="252" fill="#00d4ff" font-family="Orbitron,monospace" font-size="7" text-anchor="middle">CMD-01</text>
-          </g>
-          <g id="meshLinks"></g>
-          <g id="droneNodes"></g>
-        </svg>
+      <!-- 天地图：真实地理底图 -->
+      <div id="mapView" class="view active">
+        <div class="tdt-toolbar" role="toolbar" aria-label="地图工具">
+          <select id="tdtType" aria-label="底图类型" onchange="tianyuMap.type(this.value)">
+            <option value="imagery">卫星影像</option><option value="vector">电子地图</option>
+          </select>
+          <button type="button" onclick="tianyuMap.fit()">定位总览</button>
+          <button type="button" onclick="tianyuMap.settings()">地图设置</button>
+          <button type="button" id="mapFullBtn" onclick="toggleMapFullscreen(event)"><span id="mapFullIcon">⛶</span> <span id="mapFullText">全屏查看</span></button>
+        </div>
+        <div class="tdt-canvas-wrap">
+          <div id="tiandituMap" aria-label="天地图态势地图"></div>
+          <div id="tdtMessage" role="status">
+            <p id="tdtMessageText">等待加载天地图</p>
+            <button type="button" onclick="tianyuMap.settings()">填写天地图 Key</button>
+            <button type="button" onclick="window.location.reload()">重新加载</button>
+          </div>
+        </div>
+        <div class="tdt-info"><span id="tdtPositionNote">等待无人机真实坐标</span><span>底图空白时请检查地图设置及网络</span></div>
+        <div id="tdtSettings" hidden>
+          <form class="tdt-settings-card" onsubmit="tianyuMap.save(event)">
+            <h3>天地图设置</h3>
+            <label for="tdtKey">浏览器端 Key</label>
+            <input id="tdtKey" type="text" autocomplete="off" spellcheck="false" maxlength="32" placeholder="粘贴天地图控制台的32位 Key">
+            <p>设置保存在当前浏览器。更换电脑或浏览器后需重新填写。</p>
+            <p>授权域名请使用本站域名：<strong>lisawf0808-spec.github.io</strong></p>
+            <a href="https://console.tianditu.gov.cn/" target="_blank" rel="noopener noreferrer">打开天地图控制台</a>
+            <p id="tdtSettingsError" role="alert"></p>
+            <div class="tdt-settings-actions"><button type="button" onclick="document.getElementById('tdtSettings').hidden=true">取消</button><button type="submit">保存并加载</button></div>
+          </form>
+        </div>
       </div>
 
       <!-- TOPO -->
@@ -1003,15 +1000,152 @@ const DRONES=[
   {id:'UAV-014',model:'海燕-I',role:'普通节点',status:'error',bat:15,signal:-96,alt:130,spd:20,rate:0.4,temp:58,flightTime:'7h22m',zone:'C2',tasks:[{name:'异常处置',zone:'C2海区',st:'running'}]}
 ];
 
-const MAP_POS=[
-  {x:200,y:228},{x:315,y:138},{x:435,y:175},{x:262,y:368},
-  {x:525,y:218},{x:655,y:298},{x:482,y:438},{x:352,y:475},
-  {x:382,y:328},{x:178,y:428},{x:602,y:378},{x:698,y:448},
-  {x:562,y:148},{x:748,y:278}
-];
 const S_COLOR={active:'#00ff88',idle:'#ff9500',charging:'#0099cc',error:'#ff3355'};
 const S_LABEL={active:'在飞',idle:'待命',charging:'充电中',error:'异常'};
 const S_CLS={active:'active',idle:'idle',charging:'charging',error:'error'};
+
+/* 天地图接入；不把旧示意图的像素位置解释为真实坐标。 */
+const tianyuMap = (() => {
+  let map = null;
+  let loading = false;
+  let positions = [];
+  let overlays = [];
+  const storageKey = 'tianyu.tianditu.browserKey';
+  const el = id => document.getElementById(id);
+  const cfg = () => window.TY_CONFIG || {};
+  function key() {
+    try { return localStorage.getItem(storageKey) || String(cfg().TIANDITU_KEY || '').trim(); }
+    catch (_) { return String(cfg().TIANDITU_KEY || '').trim(); }
+  }
+  function message(text, show = true) {
+    el('tdtMessageText').textContent = text;
+    el('tdtMessage').hidden = !show;
+  }
+  function normalize(rows) {
+    if (!Array.isArray(rows)) return [];
+    const ids = new Set();
+    return rows.filter(p => {
+      if (!p || typeof p.id !== 'string' || !DRONES.some(d => d.id === p.id) || ids.has(p.id)) return false;
+      if (!Number.isFinite(p.lng) || !Number.isFinite(p.lat) || p.lng < -180 || p.lng > 180 || p.lat < -85 || p.lat > 85) return false;
+      if (p.lng === 0 && p.lat === 0) return false;
+      ids.add(p.id); return true;
+    }).map(p => ({id:p.id, lng:p.lng, lat:p.lat}));
+  }
+  function refreshNote() {
+    el('tdtPositionNote').textContent = positions.length
+      ? `已定位 ${positions.length} 架 · 未提供坐标的无人机不落图`
+      : '等待无人机真实坐标';
+  }
+  function draw() {
+    refreshNote();
+    if (!map) return;
+    overlays.forEach(o => map.removeOverLay(o));
+    overlays = [];
+    positions.forEach(p => {
+      const point = new T.LngLat(p.lng, p.lat);
+      const marker = new T.Marker(point);
+      marker.addEventListener('click', () => {
+        const i = DRONES.findIndex(d => d.id === p.id);
+        if (i >= 0) selectDrone(i);
+      });
+      map.addOverLay(marker); overlays.push(marker);
+      const label = new T.Label({text:p.id, position:point, offset:new T.Point(10,-26)});
+      map.addOverLay(label); overlays.push(label);
+    });
+  }
+  function resize() {
+    if (map && el('mapView').classList.contains('active')) map.checkResize();
+  }
+  function fit() {
+    if (!map) return;
+    resize();
+    if (positions.length === 1) map.centerAndZoom(new T.LngLat(positions[0].lng,positions[0].lat),12);
+    else if (positions.length > 1) map.setViewport(positions.map(p => new T.LngLat(p.lng,p.lat)));
+    else map.centerAndZoom(new T.LngLat(118,34),5);
+  }
+  function focus(id) {
+    const p = positions.find(p => p.id === id);
+    if (map && p) map.panTo(new T.LngLat(p.lng,p.lat));
+  }
+  function type(value) {
+    if (!map) return;
+    map.setMapType(value === 'vector' ? window.TMAP_NORMAL_MAP : window.TMAP_HYBRID_MAP);
+  }
+  function construct() {
+    try {
+      map = new T.Map('tiandituMap');
+      map.centerAndZoom(new T.LngLat(118,34),5);
+      type(el('tdtType').value);
+      map.enableScrollWheelZoom();
+      map.addControl(new T.Control.Zoom());
+      map.addControl(new T.Control.Scale());
+      message('',false);
+      draw();
+      if (positions.length) fit();
+      setTimeout(resize,100);
+    } catch (_) {
+      if (map && typeof map.clearOverLays === 'function') map.clearOverLays();
+      map = null;
+      message('地图初始化失败，请检查天地图密钥、域名授权及网络，再刷新页面。');
+    }
+  }
+  function init() {
+    if (map || loading) { resize(); return; }
+    positions = normalize(cfg().MAP_POSITIONS || positions);
+    refreshNote();
+    const tk = key();
+    if (!/^[a-f0-9]{32}$/i.test(tk)) {
+      message('请先填写天地图浏览器端 Key，启用真实地图。');
+      return;
+    }
+    loading = true;
+    message('正在连接天地图…');
+    const script = document.createElement('script');
+    script.src = 'https://api.tianditu.gov.cn/api?v=4.0&tk=' + encodeURIComponent(tk);
+    script.async = true;
+    let finished = false;
+    const timeout = setTimeout(() => fail(),20000);
+    function fail() {
+      if (finished) return;
+      finished = true; clearTimeout(timeout); loading = false;
+      message('天地图连接失败或超时。请检查网络、Key及域名授权，随后点击重新加载。');
+    }
+    script.onerror = fail;
+    script.onload = () => {
+      if (finished) return;
+      finished = true; clearTimeout(timeout); loading = false;
+      if (!window.T || typeof T.Map !== 'function') {
+        message('天地图服务未正常加载，请检查 Key、网络及域名授权。'); return;
+      }
+      construct();
+    };
+    document.head.appendChild(script);
+  }
+  function settings() {
+    el('tdtKey').value = key();
+    el('tdtSettingsError').textContent = '';
+    el('tdtSettings').hidden = false;
+    el('tdtKey').focus();
+  }
+  function save(event) {
+    event.preventDefault();
+    const value = el('tdtKey').value.trim();
+    if (!/^[a-f0-9]{32}$/i.test(value)) {
+      el('tdtSettingsError').textContent = '请粘贴完整的32位天地图浏览器端 Key。'; return;
+    }
+    try { localStorage.setItem(storageKey,value); }
+    catch (_) { el('tdtSettingsError').textContent = '浏览器禁止保存设置，请允许本站存储后重试。'; return; }
+    window.location.reload();
+  }
+  // 接口接受完整的当前定位列表；空列表会移除旧点，不把失效位置继续展示。
+  function updatePositions(rows) { positions = normalize(rows); draw(); }
+  return {init,resize,fit,focus,type,settings,save,updatePositions};
+})();
+window.TianyuMap = tianyuMap;
+window.addEventListener('resize', () => tianyuMap.resize());
+if (window.ResizeObserver) {
+  new ResizeObserver(() => tianyuMap.resize()).observe(document.getElementById('mapView'));
+}
 
 const TASKS_DATA=[
   {id:'TSK-2024-0891',name:'B3海区环境监测',type:'环境监测',drone:'UAV-004',zone:'B3海区',priority:'high',progress:68,status:'running',desc:'对B3海区进行全方位气象与水文环境数据采集'},
@@ -1077,53 +1211,9 @@ function renderList(){
   });
 }
 
-function renderMap(){
-  const lG=document.getElementById('meshLinks');
-  const nG=document.getElementById('droneNodes');
-  lG.innerHTML='';nG.innerHTML='';
-  const NS='http://www.w3.org/2000/svg';
-  const links=[[0,1],[0,4],[1,2],[2,3],[4,5],[5,6],[6,8],[8,9],[8,10],[10,11],[11,12],[12,13],[3,9],[7,3]];
-  links.forEach(([a,b])=>{
-    if(a>=DRONES.length||b>=DRONES.length)return;
-    const pa=MAP_POS[a],pb=MAP_POS[b];
-    const err=DRONES[a].status==='error'||DRONES[b].status==='error';
-    const ln=document.createElementNS(NS,'line');
-    ln.setAttribute('x1',pa.x);ln.setAttribute('y1',pa.y);ln.setAttribute('x2',pb.x);ln.setAttribute('y2',pb.y);
-    ln.setAttribute('stroke',err?'rgba(255,51,85,0.3)':'rgba(0,212,255,0.22)');
-    ln.setAttribute('stroke-width','1');ln.classList.add('mesh-link');
-    lG.appendChild(ln);
-  });
-  DRONES.forEach((d,i)=>{
-    const p=MAP_POS[i];const color=S_COLOR[d.status];
-    const g=document.createElementNS(NS,'g');
-    g.style.cursor='pointer';
-    g.addEventListener('click',()=>selectDrone(i));
-    if(d.status==='active'){
-      const ring=document.createElementNS(NS,'circle');
-      ring.setAttribute('cx',p.x);ring.setAttribute('cy',p.y);ring.setAttribute('r','10');
-      ring.setAttribute('fill','none');ring.setAttribute('stroke',color);ring.setAttribute('stroke-opacity','0.5');ring.setAttribute('stroke-width','1.5');
-      ring.style.animation=`node-ring ${1.5+Math.random()*0.8}s ease-out ${Math.random()*2}s infinite`;
-      g.appendChild(ring);
-    }
-    const c=document.createElementNS(NS,'circle');
-    c.setAttribute('cx',p.x);c.setAttribute('cy',p.y);c.setAttribute('r','8');
-    c.setAttribute('fill',color+'22');c.setAttribute('stroke',color);c.setAttribute('stroke-width','1.5');
-    if(d.status==='error')c.style.animation='node-blink 0.4s step-end infinite';
-    g.appendChild(c);
-    const dot=document.createElementNS(NS,'circle');
-    dot.setAttribute('cx',p.x);dot.setAttribute('cy',p.y);dot.setAttribute('r','3');dot.setAttribute('fill',color);
-    g.appendChild(dot);
-    const lbl=document.createElementNS(NS,'text');
-    lbl.setAttribute('x',p.x);lbl.setAttribute('y',p.y+20);lbl.setAttribute('fill',color);
-    lbl.setAttribute('font-family','Orbitron,monospace');lbl.setAttribute('font-size','8');
-    lbl.setAttribute('text-anchor','middle');lbl.setAttribute('font-weight','600');
-    lbl.textContent=d.id;
-    g.appendChild(lbl);
-    nG.appendChild(g);
-  });
-}
+function renderMap(){tianyuMap.init();}
 
-function selectDrone(i){selIdx=i;renderList();updateDetail();}
+function selectDrone(i){selIdx=i;renderList();updateDetail();tianyuMap.focus(DRONES[i].id);}
 
 function updateDetail(){
   const d=DRONES[selIdx];
@@ -1258,6 +1348,7 @@ function switchView(btn){
   const alertEl=document.getElementById('alertBanner');
   if(alertEl)alertEl.classList.toggle('alert-hidden-for-insitu',isInsitu||isDerun);
   if(btn.dataset.view==='monitorView')setTimeout(drawChart,60);
+  if(btn.dataset.view==='mapView')setTimeout(()=>tianyuMap.resize(),60);
 }
 
 
@@ -1289,6 +1380,7 @@ function toggleMapFullscreen(event){
   map.classList.toggle('is-fullscreen',on);
   if(icon)icon.textContent=on?'✕':'⛶';
   if(text)text.textContent=on?'退出全屏':'全屏查看';
+  setTimeout(()=>tianyuMap.resize(),60);
 }
 function handleMapClick(event){}
 document.addEventListener('keydown',e=>{
